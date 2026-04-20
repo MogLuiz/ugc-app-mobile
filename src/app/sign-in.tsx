@@ -3,13 +3,14 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native'
+import { router } from 'expo-router'
 import { useSession } from '@/hooks/useSession'
 import { getFriendlyAuthError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
@@ -73,6 +74,7 @@ export default function SignInScreen() {
     setIsSubmitting(true)
     try {
       await signIn(email.trim(), password)
+      router.replace('/(app)/(tabs)')
     } catch (err: unknown) {
       const raw = extractErrorMessage(err)
       setErrors({ form: getFriendlyAuthError(raw) })
@@ -132,12 +134,12 @@ export default function SignInScreen() {
               onSubmitEditing={handleSubmit}
               editable={!isSubmitting}
             />
-            <TouchableOpacity
+            <Pressable
               onPress={() => setShowPassword((v) => !v)}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={styles.toggleText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
-            </TouchableOpacity>
+            </Pressable>
           </View>
           {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
         </View>
@@ -148,18 +150,21 @@ export default function SignInScreen() {
           </View>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.button, isSubmitting && styles.buttonDisabled]}
+        <Pressable
+          style={({ pressed }) => [
+            styles.button,
+            isSubmitting && styles.buttonDisabled,
+            pressed && !isSubmitting && styles.buttonPressed,
+          ]}
           onPress={handleSubmit}
           disabled={isSubmitting}
-          activeOpacity={0.8}
         >
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
-        </TouchableOpacity>
+        </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -254,6 +259,9 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.6,
+  },
+  buttonPressed: {
+    opacity: 0.85,
   },
   buttonText: {
     color: '#fff',

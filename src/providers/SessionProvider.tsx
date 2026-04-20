@@ -1,12 +1,11 @@
-import { SECURE_STORE_KEYS } from '@/lib/api'
+import { SECURE_STORE_KEYS } from '@/constants/storage-keys'
 import { queryClient } from '@/lib/queryClient'
+import { performTokenRefresh } from '@/lib/tokenRefresh'
 import { authService } from '@/services/auth.service'
 import { notificationsService } from '@/services/notifications.service'
 import { useAuthStore } from '@/store/auth.store'
 import * as SecureStore from 'expo-secure-store'
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
-
-const ME_TIMEOUT_MS = 8_000
 
 type SessionContextValue = {
   isLoading: boolean
@@ -34,18 +33,34 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         if (!accessToken) return
 
-        const controller = new AbortController()
-        const timeout = setTimeout(() => controller.abort(), ME_TIMEOUT_MS)
-
         try {
-          const user = await authService.getMe()
+          const user = await authService.getMe(accessToken)
           setAuth(user, accessToken, refreshToken ?? undefined)
-        } catch {
-          await SecureStore.deleteItemAsync(SECURE_STORE_KEYS.accessToken)
-          await SecureStore.deleteItemAsync(SECURE_STORE_KEYS.refreshToken)
-          clearAuth()
-        } finally {
-          clearTimeout(timeout)
+        } catch (err: unknown) {
+          const status = (err as { response?: { status?: number } })?.response?.status
+
+          if (status === 401 && refreshToken) {
+            try {
+              // performTokenRefresh already updates SecureStore + auth store tokens
+              const newAccessToken = await performTokenRefresh()
+              const user = await authService.getMe(newAccessToken)
+              const { accessToken: storedToken, refreshToken: storedRefresh } =
+                useAuthStore.getState()
+              setAuth(user, storedToken ?? newAccessToken, storedRefresh ?? undefined)
+            } catch {
+              await Promise.all([
+                SecureStore.deleteItemAsync(SECURE_STORE_KEYS.accessToken),
+                SecureStore.deleteItemAsync(SECURE_STORE_KEYS.refreshToken),
+              ])
+              clearAuth()
+            }
+          } else {
+            await Promise.all([
+              SecureStore.deleteItemAsync(SECURE_STORE_KEYS.accessToken),
+              SecureStore.deleteItemAsync(SECURE_STORE_KEYS.refreshToken),
+            ])
+            clearAuth()
+          }
         }
       } catch {
         clearAuth()
@@ -60,10 +75,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const signIn = useCallback(
     async (email: string, password: string) => {
       const { user, accessToken, refreshToken } = await authService.signIn(email, password)
+
       await Promise.all([
         SecureStore.setItemAsync(SECURE_STORE_KEYS.accessToken, accessToken),
         SecureStore.setItemAsync(SECURE_STORE_KEYS.refreshToken, refreshToken),
       ])
+
       setAuth(user, accessToken, refreshToken)
 
       import('@/features/notifications/pushNotifications')
@@ -77,7 +94,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     const { accessToken } = useAuthStore.getState()
 
-    await authService.signOut().catch(() => {})
+    await authService.signOut()
 
     if (accessToken) {
       await notificationsService.unregisterDevicePushToken(accessToken).catch(() => {})

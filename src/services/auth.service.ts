@@ -2,6 +2,25 @@ import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { bootstrapToUser, type BootstrapPayload, type User } from '@/types'
 
+export function getFriendlyForgotPasswordError(message?: string | null): string {
+  if (!message?.trim()) return 'Erro ao enviar o link. Tente novamente em alguns instantes.'
+  const lower = message.toLowerCase()
+  if (
+    lower.includes('too many requests') ||
+    lower.includes('rate limit') ||
+    lower.includes('email rate limit')
+  )
+    return 'Muitas tentativas. Aguarde alguns minutos antes de solicitar um novo link.'
+  if (
+    lower.includes('network') ||
+    lower.includes('timeout') ||
+    lower.includes('fetch') ||
+    lower === 'aborted'
+  )
+    return 'Erro de conexão. Verifique sua internet.'
+  return 'Erro ao enviar o link. Tente novamente em alguns instantes.'
+}
+
 export function getFriendlyRegisterError(message?: string | null): string {
   if (!message?.trim()) return 'Erro ao criar conta. Tente novamente.'
   const lower = message.toLowerCase()
@@ -121,6 +140,13 @@ export const authService = {
     }
     const { data } = await api.get<BootstrapPayload>('/profiles/me')
     return bootstrapToUser(data)
+  },
+
+  async forgotPassword(email: string): Promise<void> {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'https://app.ugclocal.com.br/auth/redefinir-senha',
+    })
+    if (error) throw error
   },
 
   async signOut(): Promise<void> {

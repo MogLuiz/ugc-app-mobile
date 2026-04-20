@@ -1,10 +1,8 @@
-import { useSession } from '@/hooks/useSession'
-import { getFriendlyAuthError } from '@/services/auth.service'
+import { authService, getFriendlyForgotPasswordError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
-import { useRef, useState } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useState } from 'react'
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,12 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native'
-
-type FormErrors = {
-  email?: string
-  password?: string
-  form?: string
-}
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -39,51 +32,76 @@ function extractErrorMessage(err: unknown): string | undefined {
   return undefined
 }
 
-export default function SignInScreen() {
-  const { signIn } = useSession()
+export default function ForgotPasswordScreen() {
   const insets = useSafeAreaInsets()
   const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [errors, setErrors] = useState<FormErrors>({})
+  const [emailError, setEmailError] = useState<string | undefined>()
+  const [globalError, setGlobalError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const passwordRef = useRef<TextInput>(null)
+  const [submitted, setSubmitted] = useState(false)
 
-  function validate(): FormErrors {
-    const next: FormErrors = {}
+  function validate(): boolean {
     if (!email.trim()) {
-      next.email = 'E-mail é obrigatório.'
-    } else if (!EMAIL_REGEX.test(email.trim())) {
-      next.email = 'Informe um e-mail válido.'
+      setEmailError('E-mail é obrigatório.')
+      return false
     }
-    if (!password) {
-      next.password = 'Senha é obrigatória.'
-    } else if (password.length < 6) {
-      next.password = 'A senha deve ter pelo menos 6 caracteres.'
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setEmailError('Informe um e-mail válido.')
+      return false
     }
-    return next
+    return true
   }
 
   async function handleSubmit() {
     if (isSubmitting) return
-
-    const validationErrors = validate()
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors)
-      return
-    }
-
-    setErrors({})
+    if (!validate()) return
+    setGlobalError(null)
     setIsSubmitting(true)
     try {
-      await signIn(email.trim(), password)
-      router.replace('/(app)/(tabs)')
+      await authService.forgotPassword(email.trim())
+      setSubmitted(true)
     } catch (err: unknown) {
       const raw = extractErrorMessage(err)
-      setErrors({ form: getFriendlyAuthError(raw) })
+      setGlobalError(getFriendlyForgotPasswordError(raw))
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (submitted) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 },
+        ]}
+      >
+        {/* Logo */}
+        <View style={styles.logoRow}>
+          <View style={styles.logoIconWrap}>
+            <Ionicons name="location" size={22} color="#fff" />
+          </View>
+          <Text style={styles.logoText}>UGC Local</Text>
+        </View>
+
+        <View style={styles.successContent}>
+          <View style={styles.successIconWrap}>
+            <Ionicons name="mail-outline" size={36} color={colors.primary} />
+          </View>
+          <Text style={styles.heading}>Verifique seu e-mail</Text>
+          <Text style={styles.successMessage}>
+            Se existir uma conta com esse e-mail, você receberá um link para redefinição em breve.
+          </Text>
+        </View>
+
+        <Pressable
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          onPress={() => router.replace('/sign-in')}
+        >
+          <Text style={styles.buttonText}>Voltar para o login</Text>
+        </Pressable>
+      </View>
+    )
   }
 
   return (
@@ -96,26 +114,35 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        {/* Logo */}
+        {/* Logo + Back */}
         <View style={styles.logoRow}>
-          <View style={styles.logoIconWrap}>
-            <Ionicons name="location" size={22} color="#fff" />
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="arrow-back" size={22} color="#0f172a" />
+          </Pressable>
+          <View style={styles.logoMark}>
+            <View style={styles.logoIconWrap}>
+              <Ionicons name="location" size={22} color="#fff" />
+            </View>
+            <Text style={styles.logoText}>UGC Local</Text>
           </View>
-          <Text style={styles.logoText}>UGC Local</Text>
+          <View style={styles.logoSpacer} />
         </View>
 
         {/* Heading */}
         <View style={styles.headingBlock}>
-          <Text style={styles.heading}>Bem-vindo de volta</Text>
+          <Text style={styles.heading}>Esqueci a senha</Text>
           <Text style={styles.subheading}>
-            Acesse sua conta para gerenciar campanhas e conteúdos.
+            Informe seu e-mail e enviaremos um link para redefinir sua senha.
           </Text>
         </View>
 
         {/* Email */}
         <View style={styles.fieldWrap}>
           <Text style={styles.label}>E-MAIL</Text>
-          <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
+          <View style={[styles.inputRow, emailError ? styles.inputRowError : undefined]}>
             <Ionicons name="mail-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
             <TextInput
               style={styles.inputText}
@@ -125,69 +152,23 @@ export default function SignInScreen() {
               autoCapitalize="none"
               autoCorrect={false}
               autoFocus
-              returnKeyType="next"
+              returnKeyType="done"
               value={email}
               onChangeText={(v) => {
                 setEmail(v)
-                if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
-              }}
-              onSubmitEditing={() => passwordRef.current?.focus()}
-              editable={!isSubmitting}
-            />
-          </View>
-          {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
-        </View>
-
-        {/* Password */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>SENHA</Text>
-          <View style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
-            <Ionicons
-              name="lock-closed-outline"
-              size={16}
-              color="#94a3b8"
-              style={styles.inputIcon}
-            />
-            <TextInput
-              ref={passwordRef}
-              style={styles.inputText}
-              placeholder="Sua senha"
-              placeholderTextColor="#94a3b8"
-              secureTextEntry={!showPassword}
-              returnKeyType="done"
-              value={password}
-              onChangeText={(v) => {
-                setPassword(v)
-                if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
+                if (emailError) setEmailError(undefined)
               }}
               onSubmitEditing={handleSubmit}
               editable={!isSubmitting}
             />
-            <Pressable
-              onPress={() => setShowPassword((v) => !v)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                size={18}
-                color="#94a3b8"
-              />
-            </Pressable>
           </View>
-          {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+          {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
         </View>
 
-        {/* Forgot */}
-        <View style={styles.rememberRow}>
-          <Pressable onPress={() => router.push('/forgot-password')}>
-            <Text style={styles.forgotText}>Esqueci a senha</Text>
-          </Pressable>
-        </View>
-
-        {/* Form error */}
-        {errors.form ? (
+        {/* Global error */}
+        {globalError ? (
           <View style={styles.formErrorBox}>
-            <Text style={styles.formErrorText}>{errors.form}</Text>
+            <Text style={styles.formErrorText}>{globalError}</Text>
           </View>
         ) : null}
 
@@ -204,15 +185,15 @@ export default function SignInScreen() {
           {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Entrar</Text>
+            <Text style={styles.buttonText}>Enviar link</Text>
           )}
         </Pressable>
 
-        {/* Register */}
-        <View style={styles.registerRow}>
-          <Text style={styles.registerText}>Não tem uma conta? </Text>
-          <Pressable onPress={() => router.push('/sign-up')}>
-            <Text style={styles.registerLink}>Cadastre-se grátis</Text>
+        {/* Back to login */}
+        <View style={styles.backToLoginRow}>
+          <Text style={styles.backToLoginText}>Lembrou a senha? </Text>
+          <Pressable onPress={() => router.back()}>
+            <Text style={styles.backToLoginLink}>Entrar</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -234,9 +215,16 @@ const styles = StyleSheet.create({
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
+    justifyContent: 'space-between',
     marginBottom: 32,
+  },
+  logoMark: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  logoSpacer: {
+    width: 22,
   },
   logoIconWrap: {
     width: 44,
@@ -309,16 +297,6 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     marginTop: 2,
   },
-  rememberRow: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
-    marginTop: 4,
-  },
-  forgotText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
   formErrorBox: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
@@ -353,19 +331,44 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
   },
-  registerRow: {
+  backToLoginRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 24,
   },
-  registerText: {
+  backToLoginText: {
     fontSize: 14,
     color: '#64748b',
   },
-  registerLink: {
+  backToLoginLink: {
     fontSize: 14,
     fontWeight: '700',
     color: colors.primary,
+  },
+  // success state
+  successContent: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  successIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    borderCurve: 'continuous',
+    backgroundColor: '#f3eeff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  successMessage: {
+    fontSize: 14,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 22,
+    maxWidth: 300,
   },
 })

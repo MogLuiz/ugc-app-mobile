@@ -1,3 +1,4 @@
+import { UgcLogo } from '@/components/UgcLogo'
 import { authService, getFriendlyForgotPasswordError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
@@ -78,9 +79,7 @@ export default function ForgotPasswordScreen() {
       >
         {/* Logo */}
         <View style={styles.logoRow}>
-          <View style={styles.logoIconWrap}>
-            <Ionicons name="location" size={22} color="#fff" />
-          </View>
+          <UgcLogo size={44} />
           <Text style={styles.logoText}>UGC Local</Text>
         </View>
 
@@ -123,9 +122,7 @@ export default function ForgotPasswordScreen() {
             <Ionicons name="arrow-back" size={22} color="#0f172a" />
           </Pressable>
           <View style={styles.logoMark}>
-            <View style={styles.logoIconWrap}>
-              <Ionicons name="location" size={22} color="#fff" />
-            </View>
+            <UgcLogo size={44} />
             <Text style={styles.logoText}>UGC Local</Text>
           </View>
           <View style={styles.logoSpacer} />
@@ -225,15 +222,6 @@ const styles = StyleSheet.create({
   },
   logoSpacer: {
     width: 22,
-  },
-  logoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   logoText: {
     fontSize: 18,

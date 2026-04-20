@@ -1,3 +1,4 @@
+import { UgcLogo } from '@/components/UgcLogo'
 import { useSession } from '@/hooks/useSession'
 import { getFriendlyAuthError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
@@ -98,9 +99,7 @@ export default function SignInScreen() {
       >
         {/* Logo */}
         <View style={styles.logoRow}>
-          <View style={styles.logoIconWrap}>
-            <Ionicons name="location" size={22} color="#fff" />
-          </View>
+          <UgcLogo size={44} />
           <Text style={styles.logoText}>UGC Local</Text>
         </View>
 
@@ -237,15 +236,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     marginBottom: 32,
-  },
-  logoIconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    borderCurve: 'continuous',
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   logoText: {
     fontSize: 18,

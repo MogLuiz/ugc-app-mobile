@@ -1,3 +1,4 @@
+import { UgcLogo } from '@/components/UgcLogo'
 import { getFriendlyRegisterError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
 import { Ionicons } from '@expo/vector-icons'
@@ -160,9 +161,7 @@ export default function SignUpScreen() {
             <Ionicons name="chevron-back" size={22} color="#0f172a" />
           </Pressable>
           <View style={styles.logoRow}>
-            <View style={styles.logoIconWrap}>
-              <Ionicons name="location" size={18} color="#fff" />
-            </View>
+            <UgcLogo size={36} />
             <Text style={styles.logoText}>UGC Local</Text>
           </View>
           <View style={styles.headerSpacer} />
@@ -431,15 +430,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-  },
-  logoIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    borderCurve: 'continuous',
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   logoText: {
     fontSize: 16,

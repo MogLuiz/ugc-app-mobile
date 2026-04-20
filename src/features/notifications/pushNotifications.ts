@@ -2,7 +2,19 @@ import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { Platform } from 'react-native'
 
-export async function registerForPushNotificationsAsync(): Promise<string> {
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === 'storeClient'
+}
+
+function isPushNotificationsSupported(): boolean {
+  return !isExpoGo()
+}
+
+export async function registerForPushNotificationsAsync(): Promise<string | null> {
+  if (!isPushNotificationsSupported()) {
+    return null
+  }
+
   if (!Device.isDevice) {
     throw new Error('Push notifications require a physical device')
   }
@@ -55,6 +67,10 @@ export async function registerForPushNotificationsAsync(): Promise<string> {
 }
 
 export async function setupNotificationListeners(): Promise<() => void> {
+  if (!isPushNotificationsSupported()) {
+    return () => {}
+  }
+
   const Notifications = await import('expo-notifications')
 
   const receivedSubscription = Notifications.addNotificationReceivedListener((_notification) => {

@@ -90,7 +90,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
       import('@/features/notifications/pushNotifications')
         .then(({ registerForPushNotificationsAsync }) => registerForPushNotificationsAsync())
-        .then((token) => notificationsService.registerDevicePushToken(token))
+        .then((token) => {
+          if (!token) return
+          return notificationsService.registerDevicePushToken(token)
+        })
         .catch(() => {})
     },
     [setAuth],
@@ -116,7 +119,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
         import('@/features/notifications/pushNotifications')
           .then(({ registerForPushNotificationsAsync }) => registerForPushNotificationsAsync())
-          .then((token) => notificationsService.registerDevicePushToken(token))
+          .then((token) => {
+            if (!token) return
+            return notificationsService.registerDevicePushToken(token)
+          })
           .catch(() => {})
       }
 

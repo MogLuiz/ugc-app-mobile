@@ -211,7 +211,7 @@ export default function SignInScreen() {
         {/* Register */}
         <View style={styles.registerRow}>
           <Text style={styles.registerText}>Não tem uma conta? </Text>
-          <Pressable>
+          <Pressable onPress={() => router.push('/sign-up')}>
             <Text style={styles.registerLink}>Cadastre-se grátis</Text>
           </Pressable>
         </View>

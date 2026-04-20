@@ -2,6 +2,23 @@ import { api } from '@/lib/api'
 import { supabase } from '@/lib/supabase'
 import { bootstrapToUser, type BootstrapPayload, type User } from '@/types'
 
+export function getFriendlyRegisterError(message?: string | null): string {
+  if (!message?.trim()) return 'Erro ao criar conta. Tente novamente.'
+  const lower = message.toLowerCase()
+  if (lower.includes('already registered') || lower.includes('already exists'))
+    return 'Este e-mail já está cadastrado. Faça login ou recupere sua senha.'
+  if (lower.includes('too many requests') || lower.includes('rate limit'))
+    return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.'
+  if (
+    lower.includes('network') ||
+    lower.includes('timeout') ||
+    lower.includes('fetch') ||
+    lower === 'aborted'
+  )
+    return 'Erro de conexão. Verifique sua internet.'
+  return message
+}
+
 export function getFriendlyAuthError(message?: string | null): string {
   if (!message?.trim()) return 'Não foi possível entrar. Tente novamente.'
   const lower = message.toLowerCase()
@@ -41,6 +58,10 @@ type SignInResult = {
   accessToken: string
   refreshToken: string
 }
+
+export type SignUpResult =
+  | { kind: 'success'; user: User; accessToken: string; refreshToken: string }
+  | { kind: 'confirmation_required' }
 
 async function fetchProfile(token: string): Promise<User> {
   const { data } = await api.get<BootstrapPayload>('/profiles/me', {
@@ -104,5 +125,39 @@ export const authService = {
 
   async signOut(): Promise<void> {
     await supabase.auth.signOut().catch(() => { })
+  },
+
+  async signUp(
+    email: string,
+    password: string,
+    meta: { name: string; role: 'COMPANY' | 'CREATOR' },
+  ): Promise<SignUpResult> {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name: meta.name, role: meta.role } },
+    })
+
+    if (error) throw error
+
+    if (!data.session) {
+      return { kind: 'confirmation_required' }
+    }
+
+    const { access_token, refresh_token } = data.session
+
+    let user: User
+    try {
+      user = await fetchProfile(access_token)
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status
+      if (status === 404) {
+        user = await bootstrapNewUser(access_token)
+      } else {
+        throw err
+      }
+    }
+
+    return { kind: 'success', user, accessToken: access_token, refreshToken: refresh_token }
   },
 }

@@ -1,7 +1,7 @@
 import { SECURE_STORE_KEYS } from '@/constants/storage-keys'
 import { queryClient } from '@/lib/queryClient'
 import { performTokenRefresh } from '@/lib/tokenRefresh'
-import { authService } from '@/services/auth.service'
+import { authService, type SignUpResult } from '@/services/auth.service'
 import { notificationsService } from '@/services/notifications.service'
 import { useAuthStore } from '@/store/auth.store'
 import * as SecureStore from 'expo-secure-store'
@@ -11,6 +11,11 @@ type SessionContextValue = {
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  signUp: (
+    email: string,
+    password: string,
+    meta: { name: string; role: 'COMPANY' | 'CREATOR' },
+  ) => Promise<SignUpResult['kind']>
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null)
@@ -91,6 +96,35 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [setAuth],
   )
 
+  const signUp = useCallback(
+    async (
+      email: string,
+      password: string,
+      meta: { name: string; role: 'COMPANY' | 'CREATOR' },
+    ): Promise<SignUpResult['kind']> => {
+      const result = await authService.signUp(email, password, meta)
+
+      if (result.kind === 'success') {
+        const { user, accessToken, refreshToken } = result
+
+        await Promise.all([
+          SecureStore.setItemAsync(SECURE_STORE_KEYS.accessToken, accessToken),
+          SecureStore.setItemAsync(SECURE_STORE_KEYS.refreshToken, refreshToken),
+        ])
+
+        setAuth(user, accessToken, refreshToken)
+
+        import('@/features/notifications/pushNotifications')
+          .then(({ registerForPushNotificationsAsync }) => registerForPushNotificationsAsync())
+          .then((token) => notificationsService.registerDevicePushToken(token))
+          .catch(() => {})
+      }
+
+      return result.kind
+    },
+    [setAuth],
+  )
+
   const signOut = useCallback(async () => {
     const { accessToken } = useAuthStore.getState()
 
@@ -110,7 +144,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [clearAuth])
 
   return (
-    <SessionContext.Provider value={{ isLoading, signIn, signOut }}>
+    <SessionContext.Provider value={{ isLoading, signIn, signOut, signUp }}>
       {children}
     </SessionContext.Provider>
   )

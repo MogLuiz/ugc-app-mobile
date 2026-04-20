@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 import { Stack } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
+import { ThemeProvider } from '@shopify/restyle'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '@/lib/queryClient'
 import { SessionProvider, useSessionContext } from '@/providers/SessionProvider'
 import { useAuthStore } from '@/store/auth.store'
+import theme from '@/theme/theme'
 
 SplashScreen.preventAutoHideAsync()
 
@@ -44,17 +46,19 @@ function RootNavigator() {
         <Stack.Screen name="sign-up" options={{ headerShown: false }} />
         <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style="dark" />
     </>
   )
 }
 
 export default function RootLayout() {
   return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>
-        <RootNavigator />
-      </QueryClientProvider>
-    </SessionProvider>
+    <ThemeProvider theme={theme}>
+      <SessionProvider>
+        <QueryClientProvider client={queryClient}>
+          <RootNavigator />
+        </QueryClientProvider>
+      </SessionProvider>
+    </ThemeProvider>
   )
 }

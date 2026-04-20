@@ -1,6 +1,7 @@
 import { UgcLogo } from '@/components/UgcLogo'
 import { getFriendlyRegisterError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
+import theme from '@/theme/theme'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -404,7 +405,7 @@ export default function SignUpScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   inner: {
     flexGrow: 1,

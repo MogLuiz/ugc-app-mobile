@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -11,27 +11,73 @@ import {
   View,
 } from 'react-native'
 import { useSession } from '@/hooks/useSession'
+import { getFriendlyAuthError } from '@/services/auth.service'
 import { colors } from '@/theme/colors'
+
+type FormErrors = {
+  email?: string
+  password?: string
+  form?: string
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function extractErrorMessage(err: unknown): string | undefined {
+  if (!err || typeof err !== 'object') return undefined
+  const e = err as Record<string, unknown>
+  if (e.response && typeof e.response === 'object') {
+    const res = e.response as Record<string, unknown>
+    if (res.data && typeof res.data === 'object') {
+      const data = res.data as Record<string, unknown>
+      if (typeof data.message === 'string') return data.message
+    }
+  }
+  if (typeof e.message === 'string') return e.message
+  return undefined
+}
 
 export default function SignInScreen() {
   const { signIn } = useSession()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<FormErrors>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const passwordRef = useRef<TextInput>(null)
 
-  async function handleSignIn() {
-    if (!email.trim() || !password.trim()) {
-      Alert.alert('Campos obrigatórios', 'Preencha e-mail e senha.')
+  function validate(): FormErrors {
+    const next: FormErrors = {}
+    if (!email.trim()) {
+      next.email = 'E-mail é obrigatório.'
+    } else if (!EMAIL_REGEX.test(email.trim())) {
+      next.email = 'Informe um e-mail válido.'
+    }
+    if (!password) {
+      next.password = 'Senha é obrigatória.'
+    } else if (password.length < 6) {
+      next.password = 'A senha deve ter pelo menos 6 caracteres.'
+    }
+    return next
+  }
+
+  async function handleSubmit() {
+    if (isSubmitting) return
+
+    const validationErrors = validate()
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors)
       return
     }
 
-    setLoading(true)
+    setErrors({})
+    setIsSubmitting(true)
     try {
       await signIn(email.trim(), password)
-    } catch {
-      Alert.alert('Erro ao entrar', 'Verifique suas credenciais e tente novamente.')
+    } catch (err: unknown) {
+      const raw = extractErrorMessage(err)
+      setErrors({ form: getFriendlyAuthError(raw) })
     } finally {
-      setLoading(false)
+      setIsSubmitting(false)
     }
   }
 
@@ -40,46 +86,81 @@ export default function SignInScreen() {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.inner}>
+      <ScrollView
+        contentContainerStyle={styles.inner}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
         <Text style={styles.title}>UGC Local</Text>
         <Text style={styles.subtitle}>Entre na sua conta</Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="E-mail"
-          placeholderTextColor={colors.text.secondary.light}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-          value={email}
-          onChangeText={setEmail}
-          editable={!loading}
-        />
+        <View style={styles.field}>
+          <TextInput
+            style={[styles.input, !!errors.email && styles.inputError]}
+            placeholder="E-mail"
+            placeholderTextColor={colors.text.secondary.light}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            returnKeyType="next"
+            value={email}
+            onChangeText={(v) => {
+              setEmail(v)
+              if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }))
+            }}
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            editable={!isSubmitting}
+          />
+          {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Senha"
-          placeholderTextColor={colors.text.secondary.light}
-          secureTextEntry
-          value={password}
-          onChangeText={setPassword}
-          editable={!loading}
-          onSubmitEditing={handleSignIn}
-          returnKeyType="done"
-        />
+        <View style={styles.field}>
+          <View style={[styles.passwordContainer, !!errors.password && styles.inputError]}>
+            <TextInput
+              ref={passwordRef}
+              style={styles.passwordInput}
+              placeholder="Senha"
+              placeholderTextColor={colors.text.secondary.light}
+              secureTextEntry={!showPassword}
+              returnKeyType="done"
+              value={password}
+              onChangeText={(v) => {
+                setPassword(v)
+                if (errors.password) setErrors((prev) => ({ ...prev, password: undefined }))
+              }}
+              onSubmitEditing={handleSubmit}
+              editable={!isSubmitting}
+            />
+            <TouchableOpacity
+              onPress={() => setShowPassword((v) => !v)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Text style={styles.toggleText}>{showPassword ? 'Ocultar' : 'Mostrar'}</Text>
+            </TouchableOpacity>
+          </View>
+          {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
+        </View>
+
+        {errors.form ? (
+          <View style={styles.formErrorBox}>
+            <Text style={styles.formErrorText}>{errors.form}</Text>
+          </View>
+        ) : null}
 
         <TouchableOpacity
-          style={[styles.button, loading && styles.buttonDisabled]}
-          onPress={handleSignIn}
-          disabled={loading}
+          style={[styles.button, isSubmitting && styles.buttonDisabled]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+          activeOpacity={0.8}
         >
-          {loading ? (
+          {isSubmitting ? (
             <ActivityIndicator color="#fff" />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   )
 }
@@ -90,9 +171,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.light,
   },
   inner: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingVertical: 40,
   },
   title: {
     fontSize: 32,
@@ -107,6 +189,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 40,
   },
+  field: {
+    marginBottom: 16,
+  },
   input: {
     backgroundColor: colors.surface.light,
     borderWidth: 1,
@@ -116,7 +201,49 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: colors.text.primary.light,
+  },
+  inputError: {
+    borderColor: colors.error,
+  },
+  fieldError: {
+    marginTop: 4,
+    fontSize: 13,
+    color: colors.error,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface.light,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: colors.text.primary.light,
+  },
+  toggleText: {
+    fontSize: 14,
+    color: colors.primary,
+    fontWeight: '500',
+    paddingLeft: 8,
+  },
+  formErrorBox: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     marginBottom: 16,
+  },
+  formErrorText: {
+    fontSize: 14,
+    color: colors.error,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: colors.primary,

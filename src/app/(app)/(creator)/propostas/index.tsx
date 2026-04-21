@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import {
   useMyCreatorContractRequestsQuery,
   useMyCreatorPendingContractRequestsQuery,
@@ -22,35 +23,64 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'FINALIZED', label: 'Finalizadas' },
 ]
 
-const EMPTY_STATE: Record<Tab, { title: string; description: string }> = {
+type EmptyConfig = {
+  title: string
+  description: string
+  cta?: { label: string; route: string }
+}
+
+const EMPTY_STATE: Record<Tab, EmptyConfig> = {
   PENDING: {
-    title: 'Nenhuma proposta pendente',
-    description: 'Quando uma empresa te convidar para um trabalho, aparecerá aqui.',
+    title: 'Nenhuma oferta por enquanto',
+    description: 'Assim que empresas enviarem propostas, elas aparecerão aqui.',
+    cta: {
+      label: 'Complete seu perfil para receber mais ofertas',
+      route: '/(creator)/perfil',
+    },
   },
   ACCEPTED: {
     title: 'Nenhum trabalho aceito',
-    description: 'Quando você aceitar uma proposta, ela aparecerá aqui.',
+    description: 'Quando uma proposta for aceita, ela aparecerá aqui.',
   },
   FINALIZED: {
-    title: 'Nenhuma proposta finalizada',
+    title: 'Nenhuma oferta finalizada',
     description: 'Propostas concluídas, recusadas ou canceladas aparecerão aqui.',
   },
+}
+
+function EmptyState({ config, onCtaPress }: { config: EmptyConfig; onCtaPress?: () => void }) {
+  return (
+    <View style={styles.emptyContainer}>
+      <View style={styles.emptyIconWrap}>
+        <Ionicons name="pricetag-outline" size={28} color="#cbd5e1" />
+        <View style={styles.emptyBadge}>
+          <Text style={styles.emptyBadgeText}>0</Text>
+        </View>
+      </View>
+
+      <Text style={styles.emptyTitle}>{config.title}</Text>
+      <Text style={styles.emptyDescription}>{config.description}</Text>
+
+      {config.cta && onCtaPress ? (
+        <Pressable style={styles.emptyCta} onPress={onCtaPress}>
+          <Text style={styles.emptyCtaText}>{config.cta.label}</Text>
+          <Ionicons name="arrow-forward" size={13} color={colors.text.secondary.light} />
+        </Pressable>
+      ) : null}
+    </View>
+  )
 }
 
 export default function PropostasScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('PENDING')
   const router = useRouter()
 
-  // Pendentes: carrega sempre (tab padrão)
   const pendingQuery = useMyCreatorPendingContractRequestsQuery()
-
-  // Aceitas e Finalizadas: sob demanda ao trocar de tab
   const acceptedQuery = useMyCreatorContractRequestsQuery('ACCEPTED', activeTab === 'ACCEPTED')
   const completedQuery = useMyCreatorContractRequestsQuery('COMPLETED', activeTab === 'FINALIZED')
   const rejectedQuery = useMyCreatorContractRequestsQuery('REJECTED', activeTab === 'FINALIZED')
   const cancelledQuery = useMyCreatorContractRequestsQuery('CANCELLED', activeTab === 'FINALIZED')
 
-  // Tab Finalizadas = merge COMPLETED + REJECTED + CANCELLED, ordenados por startsAt desc
   const finalizedItems = useMemo(() => {
     const completed = completedQuery.data ?? []
     const rejected = rejectedQuery.data ?? []
@@ -83,6 +113,10 @@ export default function PropostasScreen() {
     router.push(`/(creator)/propostas/${item.id}` as never)
   }
 
+  function handleCtaPress(route: string) {
+    router.push(route as never)
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -99,9 +133,13 @@ export default function PropostasScreen() {
               style={[styles.tabItem, isActive && styles.tabItemActive]}
               onPress={() => setActiveTab(tab.id)}
             >
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
+                {tab.label}
+              </Text>
               {count !== null ? (
-                <Text style={[styles.tabCount, isActive && styles.tabCountActive]}>{count}</Text>
+                <Text style={[styles.tabCount, isActive && styles.tabCountActive]}>
+                  {count}
+                </Text>
               ) : null}
             </Pressable>
           )
@@ -111,10 +149,14 @@ export default function PropostasScreen() {
       {isLoading ? (
         <ProposalSkeleton />
       ) : activeItems.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>{EMPTY_STATE[activeTab].title}</Text>
-          <Text style={styles.emptyDescription}>{EMPTY_STATE[activeTab].description}</Text>
-        </View>
+        <EmptyState
+          config={EMPTY_STATE[activeTab]}
+          onCtaPress={
+            EMPTY_STATE[activeTab].cta
+              ? () => handleCtaPress(EMPTY_STATE[activeTab].cta!.route)
+              : undefined
+          }
+        />
       ) : (
         <FlatList
           data={activeItems}
@@ -198,23 +240,73 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 12,
   },
+
+  // Empty state
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    gap: 8,
+    paddingBottom: 80,
+    gap: 0,
+  },
+  emptyIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#f6f5f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#ef4444',
+    borderWidth: 2,
+    borderColor: colors.surface.light,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyBadgeText: {
+    fontSize: 10,
+    fontWeight: '900',
+    color: '#fff',
+    lineHeight: 12,
   },
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.text.primary.light,
     textAlign: 'center',
+    letterSpacing: -0.3,
+    marginBottom: 8,
   },
   emptyDescription: {
     fontSize: 14,
     color: colors.text.secondary.light,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: 20,
+  },
+  emptyCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.surface.light,
+    borderWidth: 1,
+    borderColor: colors.border.light,
+    borderRadius: 100,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  emptyCtaText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.text.secondary.light,
   },
 })

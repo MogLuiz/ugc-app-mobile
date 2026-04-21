@@ -6,6 +6,8 @@ export type ContractRequestStatus =
   | 'CANCELLED'
   | 'COMPLETED'
   | 'EXPIRED'
+  | 'AWAITING_COMPLETION_CONFIRMATION'
+  | 'COMPLETION_DISPUTE'
 
 export type CompanyCampaignStatus =
   | 'PENDING'
@@ -63,6 +65,14 @@ export type ContractRequestItem = {
   creatorAvatarUrlSnapshot: string | null
   rejectionReason: string | null
   openOfferId?: string | null
+  completedAt?: string | null
+  creatorConfirmedCompletedAt?: string | null
+  companyConfirmedCompletedAt?: string | null
+  contestDeadlineAt?: string | null
+  completionDisputeReason?: string | null
+  completionDisputedAt?: string | null
+  completionDisputedByUserId?: string | null
+  completionPhaseEnteredAt?: string | null
   createdAt?: string
   updatedAt?: string
   // Enriched fields (my-creator/pending)
@@ -80,4 +90,24 @@ export type ContractRequestItem = {
   pricing?: { totalAmount: number; baseAmount: number; transportAmount: number }
   metadata?: { createdAt: string | null; acceptedAt: string | null }
   actions?: { canCancel: boolean; canChat: boolean; canViewDetails: boolean }
+}
+
+export type ReviewerRole = 'COMPANY' | 'CREATOR'
+
+export type ReviewItem = {
+  id: string
+  reviewerRole: ReviewerRole
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+export type ContractReviewsResponse = {
+  contractRequestId: string
+  reviews: ReviewItem[]
+}
+
+export type CreateReviewPayload = {
+  rating: number
+  comment?: string
 }

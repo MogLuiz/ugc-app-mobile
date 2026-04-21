@@ -77,9 +77,24 @@ export default function PropostasScreen() {
 
   const pendingQuery = useMyCreatorPendingContractRequestsQuery()
   const acceptedQuery = useMyCreatorContractRequestsQuery('ACCEPTED', activeTab === 'ACCEPTED')
+  const awaitingConfirmationQuery = useMyCreatorContractRequestsQuery(
+    'AWAITING_COMPLETION_CONFIRMATION',
+    activeTab === 'ACCEPTED',
+  )
+  const disputeQuery = useMyCreatorContractRequestsQuery(
+    'COMPLETION_DISPUTE',
+    activeTab === 'ACCEPTED',
+  )
   const completedQuery = useMyCreatorContractRequestsQuery('COMPLETED', activeTab === 'FINALIZED')
   const rejectedQuery = useMyCreatorContractRequestsQuery('REJECTED', activeTab === 'FINALIZED')
   const cancelledQuery = useMyCreatorContractRequestsQuery('CANCELLED', activeTab === 'FINALIZED')
+
+  const acceptedItems = useMemo(() => {
+    const accepted = acceptedQuery.data ?? []
+    const awaitingConfirmation = awaitingConfirmationQuery.data ?? []
+    const disputes = disputeQuery.data ?? []
+    return [...awaitingConfirmation, ...disputes, ...accepted].sort(sortByStartsAtDesc)
+  }, [acceptedQuery.data, awaitingConfirmationQuery.data, disputeQuery.data])
 
   const finalizedItems = useMemo(() => {
     const completed = completedQuery.data ?? []
@@ -90,13 +105,14 @@ export default function PropostasScreen() {
 
   const activeItems: ContractRequestItem[] = (() => {
     if (activeTab === 'PENDING') return pendingQuery.data ?? []
-    if (activeTab === 'ACCEPTED') return acceptedQuery.data ?? []
+    if (activeTab === 'ACCEPTED') return acceptedItems
     return finalizedItems
   })()
 
   const isLoading = (() => {
     if (activeTab === 'PENDING') return pendingQuery.isLoading
-    if (activeTab === 'ACCEPTED') return acceptedQuery.isLoading
+    if (activeTab === 'ACCEPTED')
+      return acceptedQuery.isLoading || awaitingConfirmationQuery.isLoading || disputeQuery.isLoading
     return completedQuery.isLoading || rejectedQuery.isLoading || cancelledQuery.isLoading
   })()
 

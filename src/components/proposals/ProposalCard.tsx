@@ -73,10 +73,24 @@ export function ProposalCard({ item, onPress }: Props) {
         </View>
       </View>
 
-      {/* Seção 4: expiry badge só para PENDING */}
+      {/* Seção 4: badges de estado */}
       {isPending && effectiveExpiresAt ? (
         <View style={styles.footer}>
           <ExpirationBadge expiresAt={effectiveExpiresAt} />
+        </View>
+      ) : item.status === 'AWAITING_COMPLETION_CONFIRMATION' ? (
+        <View style={styles.footer}>
+          <View style={[styles.statusBadge, styles.badgeAmber]}>
+            <Text style={[styles.badgeText, styles.badgeTextAmber]}>
+              Aguardando confirmação
+            </Text>
+          </View>
+        </View>
+      ) : item.status === 'COMPLETION_DISPUTE' ? (
+        <View style={styles.footer}>
+          <View style={[styles.statusBadge, styles.badgeRed]}>
+            <Text style={[styles.badgeText, styles.badgeTextRed]}>Em disputa</Text>
+          </View>
         </View>
       ) : null}
     </Pressable>
@@ -145,5 +159,27 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 100,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badgeAmber: {
+    backgroundColor: '#fef3c7',
+  },
+  badgeRed: {
+    backgroundColor: '#fee2e2',
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  badgeTextAmber: {
+    color: '#92400e',
+  },
+  badgeTextRed: {
+    color: '#991b1b',
   },
 })

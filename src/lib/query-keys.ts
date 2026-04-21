@@ -8,6 +8,9 @@ export const contractRequestKeys = {
   creatorList: (status: string) => [...contractRequestKeys.all, 'creator', status] as const,
   companyList: (status?: string) =>
     [...contractRequestKeys.all, 'company', status ?? 'all'] as const,
+  detail: (id: string) => [...contractRequestKeys.all, 'detail', id] as const,
+  reviews: (contractRequestId: string) =>
+    [...contractRequestKeys.all, 'reviews', contractRequestId] as const,
 }
 
 export const chatKeys = {

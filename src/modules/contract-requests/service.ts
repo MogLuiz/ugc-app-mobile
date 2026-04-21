@@ -1,5 +1,10 @@
 import { api } from '@/lib/api'
-import type { ContractRequestItem } from './types'
+import type {
+  ContractRequestItem,
+  ContractReviewsResponse,
+  CreateReviewPayload,
+  ReviewItem,
+} from './types'
 
 export async function getMyCreatorPendingContractRequests(): Promise<ContractRequestItem[]> {
   const { data } = await api.get<ContractRequestItem[]>('/contract-requests/my-creator/pending')
@@ -7,7 +12,13 @@ export async function getMyCreatorPendingContractRequests(): Promise<ContractReq
 }
 
 export async function getMyCreatorContractRequests(
-  status: 'ACCEPTED' | 'COMPLETED' | 'REJECTED' | 'CANCELLED',
+  status:
+    | 'ACCEPTED'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'CANCELLED'
+    | 'AWAITING_COMPLETION_CONFIRMATION'
+    | 'COMPLETION_DISPUTE',
 ): Promise<ContractRequestItem[]> {
   const { data } = await api.get<ContractRequestItem[]>('/contract-requests/my-creator', {
     params: { status },
@@ -40,6 +51,55 @@ export async function cancelContractRequest(
 ): Promise<ContractRequestItem> {
   const { data } = await api.patch<ContractRequestItem>(
     `/contract-requests/${contractRequestId}/cancel`,
+  )
+  return data
+}
+
+export async function getContractRequestById(
+  contractRequestId: string,
+): Promise<ContractRequestItem> {
+  const { data } = await api.get<ContractRequestItem>(
+    `/contract-requests/${contractRequestId}`,
+  )
+  return data
+}
+
+export async function confirmCompletion(
+  contractRequestId: string,
+): Promise<ContractRequestItem> {
+  const { data } = await api.patch<ContractRequestItem>(
+    `/contract-requests/${contractRequestId}/confirm-completion`,
+  )
+  return data
+}
+
+export async function disputeCompletion(
+  contractRequestId: string,
+  reason: string,
+): Promise<ContractRequestItem> {
+  const { data } = await api.patch<ContractRequestItem>(
+    `/contract-requests/${contractRequestId}/dispute-completion`,
+    { reason },
+  )
+  return data
+}
+
+export async function submitReview(
+  contractRequestId: string,
+  payload: CreateReviewPayload,
+): Promise<ReviewItem> {
+  const { data } = await api.post<ReviewItem>(
+    `/contract-requests/${contractRequestId}/reviews`,
+    payload,
+  )
+  return data
+}
+
+export async function getContractReviews(
+  contractRequestId: string,
+): Promise<ContractReviewsResponse> {
+  const { data } = await api.get<ContractReviewsResponse>(
+    `/contract-requests/${contractRequestId}/reviews`,
   )
   return data
 }

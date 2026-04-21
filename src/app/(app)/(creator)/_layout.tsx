@@ -11,12 +11,13 @@ type TabConfig = {
   activeIcon: IoniconsName
 }
 
+// Order mirrors the web CreatorBottomNav: Início · Campanhas · Agenda · Mensagens · Perfil
 const TABS: TabConfig[] = [
   { name: 'index', title: 'Início', icon: 'home-outline', activeIcon: 'home' },
-  { name: 'propostas', title: 'Propostas', icon: 'document-text-outline', activeIcon: 'document-text' },
-  { name: 'mensagens', title: 'Mensagens', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
-  { name: 'oportunidades', title: 'Oportunidades', icon: 'briefcase-outline', activeIcon: 'briefcase' },
+  { name: 'propostas', title: 'Campanhas', icon: 'briefcase-outline', activeIcon: 'briefcase' },
   { name: 'agenda', title: 'Agenda', icon: 'calendar-outline', activeIcon: 'calendar' },
+  { name: 'mensagens', title: 'Mensagens', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
+  { name: 'perfil', title: 'Perfil', icon: 'person-outline', activeIcon: 'person' },
 ]
 
 export default function CreatorTabsLayout() {
@@ -41,6 +42,8 @@ export default function CreatorTabsLayout() {
           }}
         />
       ))}
+      {/* Oportunidades: rota acessível via navegação, mas fora da tab bar */}
+      <Tabs.Screen name="oportunidades" options={{ href: null }} />
     </Tabs>
   )
 }

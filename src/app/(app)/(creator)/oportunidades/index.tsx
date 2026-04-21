@@ -1,18 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
 
-export default function HomeScreen() {
-  const { user } = useSession()
-
+export default function OportunidadesScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Início</Text>
-      {user && (
-        <Text style={styles.subtitle}>
-          Olá, {user.name} · {user.role}
-        </Text>
-      )}
+      <Text style={styles.title}>Oportunidades</Text>
     </View>
   )
 }
@@ -28,10 +20,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.text.primary.light,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary.light,
-    marginTop: 8,
   },
 })

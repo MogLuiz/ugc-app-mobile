@@ -1,11 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native'
 import { colors } from '@/theme/colors'
 
-export default function NotificationsScreen() {
+export default function AgendaScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notificações</Text>
-      <Text style={styles.subtitle}>Suas notificações aparecerão aqui</Text>
+      <Text style={styles.title}>Agenda</Text>
     </View>
   )
 }
@@ -21,10 +20,5 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.text.primary.light,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary.light,
-    marginTop: 8,
   },
 })

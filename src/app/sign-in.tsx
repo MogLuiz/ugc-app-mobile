@@ -80,7 +80,7 @@ export default function SignInScreen() {
     setIsSubmitting(true)
     try {
       await signIn(email.trim(), password)
-      router.replace('/(app)/(tabs)')
+      router.replace('/(app)/' as never)
     } catch (err: unknown) {
       const raw = extractErrorMessage(err)
       setErrors({ form: getFriendlyAuthError(raw) })

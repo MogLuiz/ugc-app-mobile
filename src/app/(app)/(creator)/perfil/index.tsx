@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
 
-export default function ProfileScreen() {
+export default function PerfilScreen() {
   const { user, signOut } = useSession()
   const [loading, setLoading] = useState(false)
 
@@ -28,13 +28,13 @@ export default function ProfileScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Perfil</Text>
-      {user && (
+      {user ? (
         <>
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.email}>{user.email}</Text>
           <Text style={styles.role}>{user.role === 'creator' ? 'Creator' : 'Empresa'}</Text>
         </>
-      )}
+      ) : null}
 
       <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} disabled={loading}>
         {loading ? (

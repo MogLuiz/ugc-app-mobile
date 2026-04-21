@@ -110,7 +110,7 @@ export default function SignUpScreen() {
       })
 
       if (kind === 'success') {
-        router.replace('/(app)/(tabs)')
+        router.replace('/(app)/' as never)
       } else {
         setConfirmationSent(true)
       }

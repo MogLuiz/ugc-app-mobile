@@ -13,16 +13,13 @@ type TabConfig = {
 
 const TABS: TabConfig[] = [
   { name: 'index', title: 'Início', icon: 'home-outline', activeIcon: 'home' },
-  {
-    name: 'notifications',
-    title: 'Notificações',
-    icon: 'notifications-outline',
-    activeIcon: 'notifications',
-  },
-  { name: 'profile', title: 'Perfil', icon: 'person-outline', activeIcon: 'person' },
+  { name: 'propostas', title: 'Propostas', icon: 'document-text-outline', activeIcon: 'document-text' },
+  { name: 'mensagens', title: 'Mensagens', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
+  { name: 'oportunidades', title: 'Oportunidades', icon: 'briefcase-outline', activeIcon: 'briefcase' },
+  { name: 'agenda', title: 'Agenda', icon: 'calendar-outline', activeIcon: 'calendar' },
 ]
 
-export default function TabsLayout() {
+export default function CreatorTabsLayout() {
   return (
     <Tabs
       screenOptions={{

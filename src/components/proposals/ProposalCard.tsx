@@ -11,12 +11,6 @@ type Props = {
   onPress: () => void
 }
 
-
-function getVisualLabel(item: ContractRequestItem): { label: string; isOffer: boolean } {
-  const isOffer = Boolean(item.openOfferId)
-  return { label: isOffer ? 'OFERTA ABERTA' : 'CONVITE DIRETO', isOffer }
-}
-
 function getLocationLine(item: ContractRequestItem): string {
   const address = item.jobFormattedAddress ?? item.jobAddress
   if (item.mode === 'REMOTE') return 'Remoto'
@@ -33,7 +27,6 @@ function getTimeLabel(startsAt: string): string {
 
 export function ProposalCard({ item, onPress }: Props) {
   const isPending = item.status === 'PENDING_ACCEPTANCE'
-  const { label: visualLabel, isOffer } = getVisualLabel(item)
   const amount = item.pricing?.totalAmount ?? item.totalAmount ?? item.totalPrice
   const effectiveExpiresAt = isPending ? getEffectiveExpiresAt(item) : null
   const locationLine = getLocationLine(item)
@@ -43,25 +36,15 @@ export function ProposalCard({ item, onPress }: Props) {
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       onPress={onPress}
     >
-      {/* Seção 1: badge de tipo + valor */}
+      {/* Seção 1: valor alinhado à direita */}
       <View style={styles.topRow}>
-        <View style={[styles.kindBadge, isOffer ? styles.kindBadgeOffer : styles.kindBadgeDirect]}>
-          <Text style={[styles.kindLabel, isOffer ? styles.kindLabelOffer : styles.kindLabelDirect]}>
-            {visualLabel}
-          </Text>
-        </View>
-        <View style={styles.amountBlock}>
-          <Text style={styles.amountLabel}>VALOR BRUTO</Text>
-          <Text style={styles.amount}>{formatAmount(amount)}</Text>
-        </View>
+        <Text style={styles.companyName} numberOfLines={2}>
+          {item.companyName ?? 'Empresa'}
+        </Text>
+        <Text style={styles.amount}>{formatAmount(amount)}</Text>
       </View>
 
-      {/* Seção 2: nome da empresa */}
-      <Text style={styles.companyName} numberOfLines={2}>
-        {item.companyName ?? 'Empresa'}
-      </Text>
-
-      {/* Seção 3: descrição em caixa cinza */}
+      {/* Seção 2: descrição em caixa cinza */}
       {item.description ? (
         <View style={styles.descriptionBox}>
           <Text style={styles.descriptionText} numberOfLines={3}>
@@ -70,7 +53,7 @@ export function ProposalCard({ item, onPress }: Props) {
         </View>
       ) : null}
 
-      {/* Seção 4: detalhes com ícones */}
+      {/* Seção 3: detalhes com ícones */}
       <View style={styles.detailsBlock}>
         <View style={styles.detailRow}>
           <Ionicons name="calendar-outline" size={14} color={colors.primary} />
@@ -90,7 +73,7 @@ export function ProposalCard({ item, onPress }: Props) {
         </View>
       </View>
 
-      {/* Seção 5: expiry badge só para PENDING — sem texto de status redundante */}
+      {/* Seção 4: expiry badge só para PENDING */}
       {isPending && effectiveExpiresAt ? (
         <View style={styles.footer}>
           <ExpirationBadge expiresAt={effectiveExpiresAt} />
@@ -113,63 +96,24 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.88,
   },
-
-  // Seção 1
   topRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 8,
+    gap: 12,
   },
-  kindBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 100,
-  },
-  kindBadgeDirect: {
-    backgroundColor: '#fef3c7',
-  },
-  kindBadgeOffer: {
-    backgroundColor: colors.primary + '18',
-  },
-  kindLabel: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.2,
-  },
-  kindLabelDirect: {
-    color: '#92400e',
-  },
-  kindLabelOffer: {
-    color: '#6a36d5',
-  },
-  amountBlock: {
-    alignItems: 'flex-end',
-  },
-  amountLabel: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.text.secondary.light,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  amount: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#6a36d5',
-    marginTop: 2,
-  },
-
-  // Seção 2
   companyName: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '800',
     color: colors.text.primary.light,
     letterSpacing: -0.2,
   },
-
-  // Seção 3
+  amount: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#6a36d5',
+  },
   descriptionBox: {
     backgroundColor: '#f6f5f8',
     borderRadius: 14,
@@ -180,8 +124,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary.light,
     lineHeight: 20,
   },
-
-  // Seção 4
   detailsBlock: {
     gap: 6,
   },
@@ -199,18 +141,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary.light,
     lineHeight: 18,
   },
-
-  // Seção 5
   footer: {
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border.light,
-  },
-  statusSubtitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.text.secondary.light,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
   },
 })

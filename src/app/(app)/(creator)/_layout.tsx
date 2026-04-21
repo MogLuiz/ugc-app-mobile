@@ -1,23 +1,37 @@
 import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { colors } from '@/theme/colors'
+
+const ICON_SIZE = 22
 
 export default function CreatorTabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.text.secondary.light,
-        tabBarStyle: { borderTopColor: colors.border.light },
+        tabBarActiveTintColor: '#895af6',
+        tabBarInactiveTintColor: '#94a3b8',
+        tabBarStyle: {
+          borderTopColor: 'rgba(137,90,246,0.08)',
+          borderTopWidth: 0.5,
+          paddingTop: 6,
+          paddingBottom: 0,
+        },
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '500',
+          marginTop: 0,
+        },
+        tabBarItemStyle: {
+          paddingTop: 2,
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Início',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -25,8 +39,8 @@ export default function CreatorTabsLayout() {
         name="propostas"
         options={{
           title: 'Campanhas',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={size} color={color} />
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -34,8 +48,8 @@ export default function CreatorTabsLayout() {
         name="agenda"
         options={{
           title: 'Agenda',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -43,8 +57,8 @@ export default function CreatorTabsLayout() {
         name="mensagens"
         options={{
           title: 'Mensagens',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={size} color={color} />
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={ICON_SIZE} color={color} />
           ),
         }}
       />
@@ -52,8 +66,8 @@ export default function CreatorTabsLayout() {
         name="perfil"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ focused, color, size }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          tabBarIcon: ({ focused, color }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={ICON_SIZE} color={color} />
           ),
         }}
       />

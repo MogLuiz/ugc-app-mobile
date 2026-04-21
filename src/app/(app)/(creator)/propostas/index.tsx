@@ -1,16 +1,16 @@
+import { useMemo, useState } from 'react'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useRouter } from 'expo-router'
 import {
   useMyCreatorContractRequestsQuery,
   useMyCreatorPendingContractRequestsQuery,
 } from '@/modules/contract-requests/queries'
-import type { ContractRequestItem } from '@/modules/contract-requests/types'
 import { sortByStartsAtDesc } from '@/modules/contract-requests/utils'
+import type { ContractRequestItem } from '@/modules/contract-requests/types'
 import { colors } from '@/theme/colors'
-import { useRouter } from 'expo-router'
-import { useMemo, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { ProposalCard } from './_components/ProposalCard'
-import { ProposalSkeleton } from './_components/ProposalSkeleton'
+import { ProposalCard } from '@/components/proposals/ProposalCard'
+import { ProposalSkeleton } from '@/components/proposals/ProposalSkeleton'
 
 // TODO: replace FlatList with FlashList (@shopify/flash-list) when KAN-50 is done
 
@@ -85,12 +85,10 @@ export default function PropostasScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.eyebrow}>OFERTAS</Text>
       </View>
 
-      {/* Tab bar */}
       <View style={styles.tabBar}>
         {TABS.map((tab) => {
           const isActive = activeTab === tab.id
@@ -110,7 +108,6 @@ export default function PropostasScreen() {
         })}
       </View>
 
-      {/* Content */}
       {isLoading ? (
         <ProposalSkeleton />
       ) : activeItems.length === 0 ? (

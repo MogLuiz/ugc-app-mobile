@@ -1,7 +1,11 @@
+import { AuthFooterLink } from '@/components/auth/AuthFooterLink'
+import { AuthFormError } from '@/components/auth/AuthFormError'
+import { AuthHeading } from '@/components/auth/AuthHeading'
 import { UgcLogo } from '@/components/UgcLogo'
+import { useSession } from '@/hooks/useSession'
 import { getFriendlyRegisterError } from '@/services/auth.service'
-import { colors } from '@/theme/colors'
 import theme from '@/theme/theme'
+import { Box, Text } from '@/theme/ui'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -12,12 +16,9 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useSession } from '@/hooks/useSession'
 
 type Role = 'business' | 'creator'
 
@@ -123,11 +124,11 @@ export default function SignUpScreen() {
 
   if (confirmationSent) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <View style={styles.confirmationWrap}>
-          <View style={styles.confirmationIcon}>
-            <Ionicons name="mail-outline" size={36} color={colors.primary} />
-          </View>
+      <Box style={[styles.container, { paddingTop: insets.top }]}>
+        <Box style={styles.confirmationWrap}>
+          <Box backgroundColor="primarySurface" style={styles.confirmationIcon}>
+            <Ionicons name="mail-outline" size={36} color={theme.colors.primary} />
+          </Box>
           <Text style={styles.confirmationTitle}>Verifique seu e-mail</Text>
           <Text style={styles.confirmationText}>
             Enviamos um link de ativação para{' '}
@@ -137,8 +138,8 @@ export default function SignUpScreen() {
           <Pressable style={styles.confirmationButton} onPress={() => router.replace('/sign-in')}>
             <Text style={styles.confirmationButtonText}>Ir para o login</Text>
           </Pressable>
-        </View>
-      </View>
+        </Box>
+      </Box>
     )
   }
 
@@ -152,31 +153,25 @@ export default function SignUpScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        {/* Header */}
-        <View style={styles.header}>
+        <Box style={styles.header}>
           <Pressable
             style={styles.backButton}
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chevron-back" size={22} color="#0f172a" />
+            <Ionicons name="chevron-back" size={22} color={theme.colors.textStrong} />
           </Pressable>
-          <View style={styles.logoRow}>
+          <Box style={styles.logoRow}>
             <UgcLogo size={36} />
             <Text style={styles.logoText}>UGC Local</Text>
-          </View>
-          <View style={styles.headerSpacer} />
-        </View>
+          </Box>
+          <Box style={styles.headerSpacer} />
+        </Box>
 
-        {/* Heading */}
-        <View style={styles.headingBlock}>
-          <Text style={styles.heading}>Crie sua conta</Text>
-          <Text style={styles.subheading}>Escolha como deseja usar a plataforma</Text>
-        </View>
+        <AuthHeading title="Crie sua conta" subtitle="Escolha como deseja usar a plataforma" />
 
-        {/* Step 1 */}
         <Text style={styles.stepLabelPurple}>PASSO 1 · ESCOLHA SEU PERFIL</Text>
-        <View style={styles.roleCards}>
+        <Box style={styles.roleCards}>
           {ROLE_OPTIONS.map(({ value, label, icon }) => {
             const selected = role === value
             return (
@@ -185,45 +180,48 @@ export default function SignUpScreen() {
                 style={[styles.roleCard, selected && styles.roleCardSelected]}
                 onPress={() => setRole(value)}
               >
-                <View style={[styles.roleCardIcon, selected && styles.roleCardIconSelected]}>
+                <Box style={[styles.roleCardIcon, selected && styles.roleCardIconSelected]}>
                   <Ionicons
                     name={icon}
                     size={20}
-                    color={selected ? '#6d28d9' : '#64748b'}
+                    color={selected ? theme.colors.primaryPressed : theme.colors.textTertiary}
                   />
-                </View>
+                </Box>
                 <Text style={styles.roleCardLabel}>{label}</Text>
                 {selected ? (
                   <Ionicons
                     name="checkmark-circle"
                     size={22}
-                    color={colors.primary}
+                    color={theme.colors.primary}
                     style={styles.roleCardCheck}
                   />
                 ) : null}
               </Pressable>
             )
           })}
-        </View>
+        </Box>
         {role ? (
           <Text style={styles.roleCopy}>{ROLE_COPY[role]}</Text>
         ) : (
           <Text style={styles.roleCopyMuted}>Selecione uma opção acima para liberar o cadastro</Text>
         )}
 
-        {/* Divider + Step 2 */}
-        <View style={styles.divider} />
+        <Box style={styles.divider} />
         <Text style={styles.stepLabelSlate}>PASSO 2 · SEUS DADOS</Text>
 
-        {/* Name */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>NOME COMPLETO</Text>
-          <View style={[styles.inputRow, errors.name ? styles.inputRowError : undefined]}>
-            <Ionicons name="person-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">NOME COMPLETO</Text>
+          <Box style={[styles.inputRow, errors.name ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="person-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.inputText}
               placeholder="Como quer ser chamado?"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               autoCapitalize="words"
               autoCorrect={false}
               returnKeyType="next"
@@ -235,20 +233,24 @@ export default function SignUpScreen() {
               onSubmitEditing={() => emailRef.current?.focus()}
               editable={!isSubmitting}
             />
-          </View>
+          </Box>
           {errors.name ? <Text style={styles.fieldError}>{errors.name}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Email */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>E-MAIL</Text>
-          <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
-            <Ionicons name="mail-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">E-MAIL</Text>
+          <Box style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="mail-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               ref={emailRef}
               style={styles.inputText}
               placeholder="seu@email.com"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -261,20 +263,24 @@ export default function SignUpScreen() {
               onSubmitEditing={() => passwordRef.current?.focus()}
               editable={!isSubmitting}
             />
-          </View>
+          </Box>
           {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Password */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>SENHA</Text>
-          <View style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
-            <Ionicons name="lock-closed-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">SENHA</Text>
+          <Box style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               ref={passwordRef}
               style={styles.inputText}
               placeholder="Mínimo 8 caracteres"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               secureTextEntry={!showPassword}
               returnKeyType="next"
               value={password}
@@ -292,23 +298,27 @@ export default function SignUpScreen() {
               <Ionicons
                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={18}
-                color="#94a3b8"
+                color={theme.colors.textMuted}
               />
             </Pressable>
-          </View>
+          </Box>
           {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Confirm Password */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>CONFIRMAR SENHA</Text>
-          <View style={[styles.inputRow, errors.confirmPassword ? styles.inputRowError : undefined]}>
-            <Ionicons name="lock-closed-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">CONFIRMAR SENHA</Text>
+          <Box style={[styles.inputRow, errors.confirmPassword ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               ref={confirmPasswordRef}
               style={styles.inputText}
               placeholder="Confirme sua senha"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               secureTextEntry={!showConfirmPassword}
               returnKeyType="done"
               value={confirmPassword}
@@ -326,16 +336,15 @@ export default function SignUpScreen() {
               <Ionicons
                 name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={18}
-                color="#94a3b8"
+                color={theme.colors.textMuted}
               />
             </Pressable>
-          </View>
+          </Box>
           {errors.confirmPassword ? (
             <Text style={styles.fieldError}>{errors.confirmPassword}</Text>
           ) : null}
-        </View>
+        </Box>
 
-        {/* Terms */}
         <Pressable
           style={styles.termsRow}
           onPress={() => {
@@ -343,9 +352,9 @@ export default function SignUpScreen() {
             if (errors.acceptTerms) setErrors((p) => ({ ...p, acceptTerms: undefined }))
           }}
         >
-          <View style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
-            {acceptTerms ? <Ionicons name="checkmark" size={11} color="#fff" /> : null}
-          </View>
+          <Box style={[styles.checkbox, acceptTerms && styles.checkboxChecked]}>
+            {acceptTerms ? <Ionicons name="checkmark" size={11} color={theme.colors.textInverse} /> : null}
+          </Box>
           <Text style={styles.termsText}>
             Eu aceito os{' '}
             <Text style={styles.termsLink}>Termos e Condições</Text>
@@ -360,14 +369,8 @@ export default function SignUpScreen() {
           </Text>
         ) : null}
 
-        {/* Form error */}
-        {errors.form ? (
-          <View style={styles.formErrorBox}>
-            <Text style={styles.formErrorText}>{errors.form}</Text>
-          </View>
-        ) : null}
+        {errors.form ? <AuthFormError message={errors.form} /> : null}
 
-        {/* Submit */}
         <Pressable
           style={({ pressed }) => [
             styles.button,
@@ -378,7 +381,7 @@ export default function SignUpScreen() {
           disabled={!role || isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
             <Text style={styles.buttonText}>
               {!role
@@ -390,13 +393,7 @@ export default function SignUpScreen() {
           )}
         </Pressable>
 
-        {/* Login link */}
-        <View style={styles.loginRow}>
-          <Text style={styles.loginText}>Já possui conta? </Text>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.loginLink}>Faça login</Text>
-          </Pressable>
-        </View>
+        <AuthFooterLink prefix="Já possui conta? " linkLabel="Faça login" onPress={() => router.back()} />
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -435,35 +432,16 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 16,
     fontWeight: '900',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     letterSpacing: -0.4,
   },
   headerSpacer: {
     width: 36,
   },
-  // Heading
-  headingBlock: {
-    alignItems: 'center',
-    marginBottom: 24,
-    gap: 6,
-  },
-  heading: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#0f172a',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  subheading: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-  },
-  // Step labels
   stepLabelPurple: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.primary,
+    color: theme.colors.primary,
     letterSpacing: 0.9,
     textAlign: 'center',
     marginBottom: 12,
@@ -471,11 +449,10 @@ const styles = StyleSheet.create({
   stepLabelSlate: {
     fontSize: 11,
     fontWeight: '700',
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
     letterSpacing: 0.9,
     marginBottom: 16,
   },
-  // Role cards
   roleCards: {
     gap: 10,
     marginBottom: 10,
@@ -485,35 +462,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     borderWidth: 1.5,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.borderSubtle,
     borderRadius: 14,
     borderCurve: 'continuous',
     paddingHorizontal: 14,
     paddingVertical: 14,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
   },
   roleCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#f3edff',
-    boxShadow: '0 4px 16px -4px rgba(137, 90, 246, 0.25)',
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.primarySurface,
+    ...theme.shadows.cardBrand,
   },
   roleCardIcon: {
     width: 40,
     height: 40,
     borderRadius: 10,
     borderCurve: 'continuous',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceAlt,
     alignItems: 'center',
     justifyContent: 'center',
   },
   roleCardIconSelected: {
-    backgroundColor: '#e4d7ff',
+    backgroundColor: theme.colors.primarySurfaceAlt,
   },
   roleCardLabel: {
     flex: 1,
     fontSize: 15,
     fontWeight: '700',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
   },
   roleCardCheck: {
     marginLeft: 4,
@@ -521,46 +498,38 @@ const styles = StyleSheet.create({
   roleCopy: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.primary,
+    color: theme.colors.primary,
     textAlign: 'center',
     marginBottom: 4,
   },
   roleCopyMuted: {
     fontSize: 12,
-    color: '#94a3b8',
+    color: theme.colors.textMuted,
     textAlign: 'center',
     marginBottom: 4,
   },
-  // Divider
   divider: {
     height: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: theme.colors.surfaceAlt,
     marginVertical: 20,
   },
-  // Fields
   fieldWrap: {
     marginBottom: 14,
     gap: 6,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94a3b8',
-    letterSpacing: 0.8,
-  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.borderSubtle,
     borderRadius: 12,
     borderCurve: 'continuous',
     paddingHorizontal: 12,
     height: 50,
   },
   inputRowError: {
-    borderColor: '#f87171',
+    borderColor: theme.colors.errorSubtle,
   },
   inputIcon: {
     marginRight: 8,
@@ -568,15 +537,14 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     paddingVertical: 0,
   },
   fieldError: {
     fontSize: 12,
-    color: '#ef4444',
+    color: theme.colors.error,
     marginTop: 2,
   },
-  // Terms
   termsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -589,54 +557,38 @@ const styles = StyleSheet.create({
     height: 18,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: '#cbd5e1',
-    backgroundColor: '#fff',
+    borderColor: theme.colors.borderSubtle,
+    backgroundColor: theme.colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 1,
     flexShrink: 0,
   },
   checkboxChecked: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   termsText: {
     flex: 1,
     fontSize: 13,
-    color: '#475569',
+    color: theme.colors.textSecondary,
     lineHeight: 18,
   },
   termsLink: {
-    color: colors.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
   termsTextMuted: {
-    color: '#64748b',
+    color: theme.colors.textTertiary,
   },
-  // Form error
-  formErrorBox: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  formErrorText: {
-    fontSize: 13,
-    color: '#ef4444',
-    textAlign: 'center',
-  },
-  // Button
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     borderCurve: 'continuous',
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 20px -4px rgba(137, 90, 246, 0.35)',
+    ...theme.shadows.primary,
   },
   buttonDisabled: {
     opacity: 0.55,
@@ -645,27 +597,10 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   buttonText: {
-    color: '#fff',
+    color: theme.colors.textInverse,
     fontSize: 15,
     fontWeight: '700',
   },
-  // Login link
-  loginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  loginText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  loginLink: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  // Confirmation screen
   confirmationWrap: {
     flex: 1,
     alignItems: 'center',
@@ -677,7 +612,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#f3edff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -685,32 +619,32 @@ const styles = StyleSheet.create({
   confirmationTitle: {
     fontSize: 22,
     fontWeight: '900',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     textAlign: 'center',
   },
   confirmationText: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textTertiary,
     textAlign: 'center',
     lineHeight: 22,
   },
   confirmationEmail: {
     fontWeight: '700',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
   },
   confirmationButton: {
     marginTop: 8,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     borderCurve: 'continuous',
     height: 50,
     paddingHorizontal: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 20px -4px rgba(137, 90, 246, 0.35)',
+    ...theme.shadows.primary,
   },
   confirmationButtonText: {
-    color: '#fff',
+    color: theme.colors.textInverse,
     fontSize: 15,
     fontWeight: '700',
   },

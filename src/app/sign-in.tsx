@@ -1,8 +1,11 @@
+import { AuthFooterLink } from '@/components/auth/AuthFooterLink'
+import { AuthFormError } from '@/components/auth/AuthFormError'
+import { AuthHeading } from '@/components/auth/AuthHeading'
 import { UgcLogo } from '@/components/UgcLogo'
 import { useSession } from '@/hooks/useSession'
 import { getFriendlyAuthError } from '@/services/auth.service'
-import { colors } from '@/theme/colors'
 import theme from '@/theme/theme'
+import { Box, Text } from '@/theme/ui'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useRef, useState } from 'react'
@@ -14,9 +17,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  View,
 } from 'react-native'
 
 type FormErrors = {
@@ -98,29 +99,29 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        {/* Logo */}
-        <View style={styles.logoRow}>
+        <Box style={styles.logoRow}>
           <UgcLogo size={44} />
           <Text style={styles.logoText}>UGC Local</Text>
-        </View>
+        </Box>
 
-        {/* Heading */}
-        <View style={styles.headingBlock}>
-          <Text style={styles.heading}>Bem-vindo de volta</Text>
-          <Text style={styles.subheading}>
-            Acesse sua conta para gerenciar campanhas e conteúdos.
-          </Text>
-        </View>
+        <AuthHeading
+          title="Bem-vindo de volta"
+          subtitle="Acesse sua conta para gerenciar campanhas e conteúdos."
+        />
 
-        {/* Email */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>E-MAIL</Text>
-          <View style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
-            <Ionicons name="mail-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">E-MAIL</Text>
+          <Box style={[styles.inputRow, errors.email ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="mail-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.inputText}
               placeholder="seu@email.com"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -134,25 +135,24 @@ export default function SignInScreen() {
               onSubmitEditing={() => passwordRef.current?.focus()}
               editable={!isSubmitting}
             />
-          </View>
+          </Box>
           {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Password */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>SENHA</Text>
-          <View style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">SENHA</Text>
+          <Box style={[styles.inputRow, errors.password ? styles.inputRowError : undefined]}>
             <Ionicons
               name="lock-closed-outline"
               size={16}
-              color="#94a3b8"
+              color={theme.colors.textMuted}
               style={styles.inputIcon}
             />
             <TextInput
               ref={passwordRef}
               style={styles.inputText}
               placeholder="Sua senha"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               secureTextEntry={!showPassword}
               returnKeyType="done"
               value={password}
@@ -170,28 +170,21 @@ export default function SignInScreen() {
               <Ionicons
                 name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                 size={18}
-                color="#94a3b8"
+                color={theme.colors.textMuted}
               />
             </Pressable>
-          </View>
+          </Box>
           {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Forgot */}
-        <View style={styles.rememberRow}>
+        <Box style={styles.rememberRow}>
           <Pressable onPress={() => router.push('/forgot-password')}>
             <Text style={styles.forgotText}>Esqueci a senha</Text>
           </Pressable>
-        </View>
+        </Box>
 
-        {/* Form error */}
-        {errors.form ? (
-          <View style={styles.formErrorBox}>
-            <Text style={styles.formErrorText}>{errors.form}</Text>
-          </View>
-        ) : null}
+        {errors.form ? <AuthFormError message={errors.form} /> : null}
 
-        {/* Submit */}
         <Pressable
           style={({ pressed }) => [
             styles.button,
@@ -202,19 +195,17 @@ export default function SignInScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
             <Text style={styles.buttonText}>Entrar</Text>
           )}
         </Pressable>
 
-        {/* Register */}
-        <View style={styles.registerRow}>
-          <Text style={styles.registerText}>Não tem uma conta? </Text>
-          <Pressable onPress={() => router.push('/sign-up')}>
-            <Text style={styles.registerLink}>Cadastre-se grátis</Text>
-          </Pressable>
-        </View>
+        <AuthFooterLink
+          prefix="Não tem uma conta? "
+          linkLabel="Cadastre-se grátis"
+          onPress={() => router.push('/sign-up')}
+        />
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -241,50 +232,26 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     letterSpacing: -0.5,
-  },
-  headingBlock: {
-    alignItems: 'center',
-    marginBottom: 28,
-    gap: 6,
-  },
-  heading: {
-    fontSize: 28,
-    fontWeight: '900',
-    color: '#0f172a',
-    letterSpacing: -0.5,
-    textAlign: 'center',
-  },
-  subheading: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
   },
   fieldWrap: {
     marginBottom: 16,
     gap: 6,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94a3b8',
-    letterSpacing: 0.8,
-  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.borderSubtle,
     borderRadius: 12,
     borderCurve: 'continuous',
     paddingHorizontal: 12,
     height: 50,
   },
   inputRowError: {
-    borderColor: '#f87171',
+    borderColor: theme.colors.errorSubtle,
   },
   inputIcon: {
     marginRight: 8,
@@ -292,12 +259,12 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     paddingVertical: 0,
   },
   fieldError: {
     fontSize: 12,
-    color: '#ef4444',
+    color: theme.colors.error,
     marginTop: 2,
   },
   rememberRow: {
@@ -308,30 +275,16 @@ const styles = StyleSheet.create({
   forgotText: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.primary,
-  },
-  formErrorBox: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  formErrorText: {
-    fontSize: 13,
-    color: '#ef4444',
-    textAlign: 'center',
+    color: theme.colors.primary,
   },
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     borderCurve: 'continuous',
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 20px -4px rgba(137, 90, 246, 0.35)',
+    ...theme.shadows.primary,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -340,23 +293,8 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   buttonText: {
-    color: '#fff',
+    color: theme.colors.textInverse,
     fontSize: 15,
     fontWeight: '700',
-  },
-  registerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  registerText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  registerLink: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
   },
 })

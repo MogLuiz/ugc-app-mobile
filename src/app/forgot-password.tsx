@@ -1,7 +1,10 @@
+import { AuthFooterLink } from '@/components/auth/AuthFooterLink'
+import { AuthFormError } from '@/components/auth/AuthFormError'
+import { AuthHeading } from '@/components/auth/AuthHeading'
 import { UgcLogo } from '@/components/UgcLogo'
 import { authService, getFriendlyForgotPasswordError } from '@/services/auth.service'
-import { colors } from '@/theme/colors'
 import theme from '@/theme/theme'
+import { Box, Text } from '@/theme/ui'
 import { Ionicons } from '@expo/vector-icons'
 import { router } from 'expo-router'
 import { useState } from 'react'
@@ -12,9 +15,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -72,27 +73,26 @@ export default function ForgotPasswordScreen() {
 
   if (submitted) {
     return (
-      <View
+      <Box
         style={[
           styles.container,
           { paddingTop: insets.top + 22, paddingBottom: insets.bottom + 24 },
         ]}
       >
-        {/* Logo */}
-        <View style={styles.logoRow}>
+        <Box style={styles.logoRow}>
           <UgcLogo size={44} />
           <Text style={styles.logoText}>UGC Local</Text>
-        </View>
+        </Box>
 
-        <View style={styles.successContent}>
-          <View style={styles.successIconWrap}>
-            <Ionicons name="mail-outline" size={36} color={colors.primary} />
-          </View>
+        <Box style={styles.successContent}>
+          <Box backgroundColor="primarySurface" style={styles.successIconWrap}>
+            <Ionicons name="mail-outline" size={36} color={theme.colors.primary} />
+          </Box>
           <Text style={styles.heading}>Verifique seu e-mail</Text>
           <Text style={styles.successMessage}>
             Se existir uma conta com esse e-mail, você receberá um link para redefinição em breve.
           </Text>
-        </View>
+        </Box>
 
         <Pressable
           style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
@@ -100,7 +100,7 @@ export default function ForgotPasswordScreen() {
         >
           <Text style={styles.buttonText}>Voltar para o login</Text>
         </Pressable>
-      </View>
+      </Box>
     )
   }
 
@@ -114,38 +114,38 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
         bounces={false}
       >
-        {/* Logo + Back */}
-        <View style={styles.logoRow}>
+        <Box style={styles.logoRow}>
           <Pressable
             onPress={() => router.back()}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="arrow-back" size={22} color="#0f172a" />
+            <Ionicons name="arrow-back" size={22} color={theme.colors.textStrong} />
           </Pressable>
-          <View style={styles.logoMark}>
+          <Box style={styles.logoMark}>
             <UgcLogo size={44} />
             <Text style={styles.logoText}>UGC Local</Text>
-          </View>
-          <View style={styles.logoSpacer} />
-        </View>
+          </Box>
+          <Box style={styles.logoSpacer} />
+        </Box>
 
-        {/* Heading */}
-        <View style={styles.headingBlock}>
-          <Text style={styles.heading}>Esqueci a senha</Text>
-          <Text style={styles.subheading}>
-            Informe seu e-mail e enviaremos um link para redefinir sua senha.
-          </Text>
-        </View>
+        <AuthHeading
+          title="Esqueci a senha"
+          subtitle="Informe seu e-mail e enviaremos um link para redefinir sua senha."
+        />
 
-        {/* Email */}
-        <View style={styles.fieldWrap}>
-          <Text style={styles.label}>E-MAIL</Text>
-          <View style={[styles.inputRow, emailError ? styles.inputRowError : undefined]}>
-            <Ionicons name="mail-outline" size={16} color="#94a3b8" style={styles.inputIcon} />
+        <Box style={styles.fieldWrap}>
+          <Text variant="label">E-MAIL</Text>
+          <Box style={[styles.inputRow, emailError ? styles.inputRowError : undefined]}>
+            <Ionicons
+              name="mail-outline"
+              size={16}
+              color={theme.colors.textMuted}
+              style={styles.inputIcon}
+            />
             <TextInput
               style={styles.inputText}
               placeholder="seu@email.com"
-              placeholderTextColor="#94a3b8"
+              placeholderTextColor={theme.colors.textMuted}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -159,18 +159,12 @@ export default function ForgotPasswordScreen() {
               onSubmitEditing={handleSubmit}
               editable={!isSubmitting}
             />
-          </View>
+          </Box>
           {emailError ? <Text style={styles.fieldError}>{emailError}</Text> : null}
-        </View>
+        </Box>
 
-        {/* Global error */}
-        {globalError ? (
-          <View style={styles.formErrorBox}>
-            <Text style={styles.formErrorText}>{globalError}</Text>
-          </View>
-        ) : null}
+        {globalError ? <AuthFormError message={globalError} /> : null}
 
-        {/* Submit */}
         <Pressable
           style={({ pressed }) => [
             styles.button,
@@ -181,19 +175,13 @@ export default function ForgotPasswordScreen() {
           disabled={isSubmitting}
         >
           {isSubmitting ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.textInverse} />
           ) : (
             <Text style={styles.buttonText}>Enviar link</Text>
           )}
         </Pressable>
 
-        {/* Back to login */}
-        <View style={styles.backToLoginRow}>
-          <Text style={styles.backToLoginText}>Lembrou a senha? </Text>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.backToLoginLink}>Entrar</Text>
-          </Pressable>
-        </View>
+        <AuthFooterLink prefix="Lembrou a senha? " linkLabel="Entrar" onPress={() => router.back()} />
       </ScrollView>
     </KeyboardAvoidingView>
   )
@@ -227,50 +215,33 @@ const styles = StyleSheet.create({
   logoText: {
     fontSize: 18,
     fontWeight: '900',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     letterSpacing: -0.5,
-  },
-  headingBlock: {
-    alignItems: 'center',
-    marginBottom: 28,
-    gap: 6,
   },
   heading: {
     fontSize: 28,
     fontWeight: '900',
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     letterSpacing: -0.5,
     textAlign: 'center',
-  },
-  subheading: {
-    fontSize: 14,
-    color: '#64748b',
-    textAlign: 'center',
-    lineHeight: 20,
   },
   fieldWrap: {
     marginBottom: 16,
     gap: 6,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94a3b8',
-    letterSpacing: 0.8,
-  },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.inputBackground,
     borderWidth: 1,
-    borderColor: '#e2e8f0',
+    borderColor: theme.colors.borderSubtle,
     borderRadius: 12,
     borderCurve: 'continuous',
     paddingHorizontal: 12,
     height: 50,
   },
   inputRowError: {
-    borderColor: '#f87171',
+    borderColor: theme.colors.errorSubtle,
   },
   inputIcon: {
     marginRight: 8,
@@ -278,36 +249,22 @@ const styles = StyleSheet.create({
   inputText: {
     flex: 1,
     fontSize: 15,
-    color: '#0f172a',
+    color: theme.colors.textStrong,
     paddingVertical: 0,
   },
   fieldError: {
     fontSize: 12,
-    color: '#ef4444',
+    color: theme.colors.error,
     marginTop: 2,
   },
-  formErrorBox: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
-  },
-  formErrorText: {
-    fontSize: 13,
-    color: '#ef4444',
-    textAlign: 'center',
-  },
   button: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 12,
     borderCurve: 'continuous',
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: '0 8px 20px -4px rgba(137, 90, 246, 0.35)',
+    ...theme.shadows.primary,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -316,26 +273,10 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   buttonText: {
-    color: '#fff',
+    color: theme.colors.textInverse,
     fontSize: 15,
     fontWeight: '700',
   },
-  backToLoginRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  backToLoginText: {
-    fontSize: 14,
-    color: '#64748b',
-  },
-  backToLoginLink: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  // success state
   successContent: {
     flex: 1,
     alignItems: 'center',
@@ -348,14 +289,13 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 20,
     borderCurve: 'continuous',
-    backgroundColor: '#f3eeff',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   successMessage: {
     fontSize: 14,
-    color: '#64748b',
+    color: theme.colors.textTertiary,
     textAlign: 'center',
     lineHeight: 22,
     maxWidth: 300,

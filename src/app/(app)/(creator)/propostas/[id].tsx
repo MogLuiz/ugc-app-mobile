@@ -1,45 +1,118 @@
 import { useState } from 'react'
 import {
-  ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
+import type { Href } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/theme/colors'
 import {
+  useAcceptContractRequestMutation,
+  useCancelContractRequestMutation,
   useConfirmCompletionMutation,
   useContractRequestDetailQuery,
   useContractReviewsQuery,
   useDisputeCompletionMutation,
+  useRejectContractRequestMutation,
   useSubmitReviewMutation,
 } from '@/modules/contract-requests/queries'
-import { formatAmount, formatDurationMinutes, formatShortDate } from '@/lib/formatters'
+import { ProposalSkeleton } from '@/components/proposals/ProposalSkeleton'
+import { CompanyHeader } from './_components/CompanyHeader'
+import { InfoGrid } from './_components/InfoGrid'
+import { BriefingSection } from './_components/BriefingSection'
+import { PaymentSection } from './_components/PaymentSection'
+import { LocationSection } from './_components/LocationSection'
+import { ProposalFooter } from './_components/ProposalFooter'
+
+// Bottom of footer (content + actions) — validated against real device; adjust if needed
+const FOOTER_HEIGHT = 88
 
 export default function ProposalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
-  const { data: item, isLoading, isError } = useContractRequestDetailQuery(id)
+  const { data: item, isLoading, isError, refetch } = useContractRequestDetailQuery(id)
   const reviewsQuery = useContractReviewsQuery(id, item?.status === 'COMPLETED')
-  const alreadyReviewed = reviewsQuery.data?.reviews.some((r) => r.reviewerRole === 'CREATOR') ?? false
+  const alreadyReviewed =
+    reviewsQuery.data?.reviews.some((r) => r.reviewerRole === 'CREATOR') ?? false
 
+  // ── Mutations: existing (AWAITING / DISPUTE / REVIEW)
   const confirmMutation = useConfirmCompletionMutation()
   const disputeMutation = useDisputeCompletionMutation()
   const reviewMutation = useSubmitReviewMutation(id)
 
+  // ── Mutations: new (PENDING_ACCEPTANCE / ACCEPTED)
+  const acceptMutation = useAcceptContractRequestMutation()
+  const rejectMutation = useRejectContractRequestMutation()
+  const cancelMutation = useCancelContractRequestMutation()
+
+  const isMutating =
+    acceptMutation.isPending ||
+    rejectMutation.isPending ||
+    cancelMutation.isPending
+
+  // ── Local state: dispute + review forms
   const [showDisputeForm, setShowDisputeForm] = useState(false)
   const [disputeReason, setDisputeReason] = useState('')
   const [reviewRating, setReviewRating] = useState(0)
   const [reviewComment, setReviewComment] = useState('')
   const [reviewSubmitted, setReviewSubmitted] = useState(false)
 
+  // ── Navigation helper
+  function navigateBackToList() {
+    try {
+      router.replace('/(creator)/propostas' as Href)
+    } catch {
+      router.back()
+    }
+  }
+
+  // ── Handlers: accept / reject / cancel / chat
+  function handleAccept() {
+    acceptMutation.mutate(id, {
+      onSuccess: navigateBackToList,
+      onError: (err) =>
+        Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível aceitar a oferta.'),
+    })
+  }
+
+  function handleReject() {
+    rejectMutation.mutate(
+      { contractRequestId: id },
+      {
+        onSuccess: navigateBackToList,
+        onError: (err) =>
+          Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível recusar a oferta.'),
+      },
+    )
+  }
+
+  function handleCancel() {
+    cancelMutation.mutate(id, {
+      onSuccess: navigateBackToList,
+      onError: (err) =>
+        Alert.alert('Erro', err instanceof Error ? err.message : 'Não foi possível desmarcar o trabalho.'),
+    })
+  }
+
+  function handleChat() {
+    router.push({
+      pathname: '/(creator)/mensagens',
+      params: { contractRequestId: id },
+    } as never)
+  }
+
+  // ── Handlers: confirm completion / dispute
   function handleConfirm() {
     Alert.alert(
       'Confirmar conclusão',
@@ -79,6 +152,7 @@ export default function ProposalDetailScreen() {
     )
   }
 
+  // ── Handler: review
   function handleSubmitReview() {
     if (reviewRating === 0) {
       Alert.alert('Atenção', 'Selecione uma nota de 1 a 5 estrelas.')
@@ -102,221 +176,272 @@ export default function ProposalDetailScreen() {
     )
   }
 
+  // ── Loading
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.center}>
-        <ActivityIndicator color={colors.primary} />
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.header}>
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="arrow-back" size={22} color={colors.text.primary.light} />
+          </Pressable>
+          <Text style={styles.headerTitle}>Detalhe da oferta</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <ProposalSkeleton />
       </SafeAreaView>
     )
   }
 
-  if (isError || !item) {
+  // ── Error
+  if (isError) {
     return (
       <SafeAreaView style={styles.center}>
-        <Text style={styles.errorText}>Não foi possível carregar a contratação.</Text>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backButtonText}>Voltar</Text>
-        </TouchableOpacity>
+        <Ionicons name="alert-circle-outline" size={40} color="#ef4444" />
+        <Text style={styles.errorText}>Não foi possível carregar a oferta.</Text>
+        <Pressable onPress={() => void refetch()} style={styles.retryButton}>
+          <Text style={styles.retryButtonText}>Tentar novamente</Text>
+        </Pressable>
+        <Pressable onPress={() => router.back()} style={styles.backLinkBtn}>
+          <Text style={styles.backLinkText}>Voltar</Text>
+        </Pressable>
       </SafeAreaView>
     )
   }
 
+  // ── Not found
+  if (!item) {
+    return (
+      <SafeAreaView style={styles.center}>
+        <Ionicons name="search-outline" size={40} color="#94a3b8" />
+        <Text style={styles.errorText}>Oferta não encontrada.</Text>
+        <Pressable onPress={() => router.back()} style={styles.retryButton}>
+          <Text style={styles.retryButtonText}>Voltar</Text>
+        </Pressable>
+      </SafeAreaView>
+    )
+  }
+
+  // ── Derived state for existing sections
   const isAwaitingConfirmation = item.status === 'AWAITING_COMPLETION_CONFIRMATION'
   const isDisputed = item.status === 'COMPLETION_DISPUTE'
   const isCompleted = item.status === 'COMPLETED'
   const creatorAlreadyConfirmed = item.creatorConfirmedCompletedAt !== null
   const companyAlreadyConfirmed = item.companyConfirmedCompletedAt !== null
 
+  const scrollPaddingBottom = FOOTER_HEIGHT + insets.bottom
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.text.primary.light} />
-        </TouchableOpacity>
+        </Pressable>
         <Text style={styles.headerTitle}>Detalhe da oferta</Text>
         <View style={{ width: 40 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Info básica */}
-        <View style={styles.card}>
-          <Text style={styles.companyName}>{item.companyName ?? 'Empresa'}</Text>
-          <Text style={styles.amount}>{formatAmount(item.pricing?.totalAmount ?? item.totalPrice)}</Text>
-          {item.description ? (
-            <View style={styles.descriptionBox}>
-              <Text style={styles.descriptionText}>{item.description}</Text>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: scrollPaddingBottom }]}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Company identity */}
+          <CompanyHeader
+            companyName={item.companyName ?? 'Empresa'}
+            companyLogoUrl={item.companyLogoUrl}
+            companyRating={item.companyRating}
+          />
+
+          {/* Info grid */}
+          <InfoGrid item={item} />
+
+          {/* Briefing */}
+          <BriefingSection description={item.description} />
+
+          {/* Payment */}
+          <PaymentSection item={item} />
+
+          {/* Location */}
+          <LocationSection item={item} />
+
+          {/* ── AWAITING COMPLETION CONFIRMATION (unchanged) ── */}
+          {isAwaitingConfirmation && (
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="time-outline" size={18} color="#d97706" />
+                <Text style={styles.sectionTitle}>Aguardando confirmação de conclusão</Text>
+              </View>
+              <Text style={styles.sectionBody}>
+                Confirme se o serviço foi realizado conforme combinado.
+              </Text>
+
+              {companyAlreadyConfirmed ? (
+                <View style={styles.confirmedRow}>
+                  <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
+                  <Text style={styles.confirmedText}>A empresa já confirmou a conclusão.</Text>
+                </View>
+              ) : null}
+
+              {!creatorAlreadyConfirmed ? (
+                <View style={styles.actionButtons}>
+                  <Pressable
+                    style={({ pressed }) => [styles.confirmButton, pressed && { opacity: 0.8 }]}
+                    onPress={handleConfirm}
+                    disabled={confirmMutation.isPending}
+                  >
+                    <Text style={styles.confirmButtonText}>
+                      {confirmMutation.isPending ? 'Confirmando...' : 'Marcar como concluído'}
+                    </Text>
+                  </Pressable>
+
+                  {!showDisputeForm ? (
+                    <Pressable
+                      style={({ pressed }) => [styles.disputeLink, pressed && { opacity: 0.7 }]}
+                      onPress={() => setShowDisputeForm(true)}
+                    >
+                      <Text style={styles.disputeLinkText}>Reportar problema</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+
+              {creatorAlreadyConfirmed && !companyAlreadyConfirmed && item.contestDeadlineAt ? (
+                <Text style={styles.deadlineText}>
+                  Se a empresa não confirmar até{' '}
+                  {new Date(item.contestDeadlineAt).toLocaleString('pt-BR')}, o contrato será
+                  concluído automaticamente.
+                </Text>
+              ) : null}
+
+              {showDisputeForm ? (
+                <View style={styles.disputeForm}>
+                  <Text style={styles.disputeLabel}>Descreva o problema</Text>
+                  <TextInput
+                    style={styles.disputeInput}
+                    placeholder="Informe o que aconteceu..."
+                    multiline
+                    numberOfLines={4}
+                    maxLength={2000}
+                    value={disputeReason}
+                    onChangeText={setDisputeReason}
+                  />
+                  <View style={styles.disputeFormButtons}>
+                    <Pressable
+                      style={({ pressed }) => [styles.disputeSubmitButton, pressed && { opacity: 0.8 }]}
+                      onPress={handleDispute}
+                      disabled={disputeMutation.isPending}
+                    >
+                      <Text style={styles.disputeSubmitText}>
+                        {disputeMutation.isPending ? 'Enviando...' : 'Abrir disputa'}
+                      </Text>
+                    </Pressable>
+                    <Pressable onPress={() => setShowDisputeForm(false)}>
+                      <Text style={styles.disputeCancelText}>Cancelar</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          )}
+
+          {/* ── COMPLETION DISPUTE (unchanged) ── */}
+          {isDisputed ? (
+            <View style={[styles.sectionCard, styles.sectionCardRed]}>
+              <View style={styles.sectionHeader}>
+                <Ionicons name="alert-circle" size={18} color="#dc2626" />
+                <Text style={[styles.sectionTitle, { color: '#dc2626' }]}>
+                  Em disputa de conclusão
+                </Text>
+              </View>
+              {item.completionDisputeReason ? (
+                <Text style={styles.sectionBody}>{item.completionDisputeReason}</Text>
+              ) : null}
+              <Text style={[styles.sectionBody, { marginTop: 4 }]}>
+                Nossa equipe está analisando. Avaliações ficam bloqueadas até a resolução.
+              </Text>
             </View>
           ) : null}
-          <View style={styles.details}>
-            <View style={styles.detailRow}>
-              <Ionicons name="calendar-outline" size={14} color={colors.primary} />
-              <Text style={styles.detailText}>
-                {formatShortDate(item.startsAt)} · {new Date(item.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+
+          {/* ── REVIEW (unchanged) ── */}
+          {isCompleted && !alreadyReviewed && !reviewSubmitted ? (
+            <View style={styles.sectionCard}>
+              <Text style={styles.sectionTitle}>Avaliar esta contratação</Text>
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Pressable key={star} onPress={() => setReviewRating(star)}>
+                    <Ionicons
+                      name={reviewRating >= star ? 'star' : 'star-outline'}
+                      size={32}
+                      color={reviewRating >= star ? '#f59e0b' : '#d1d5db'}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+              <TextInput
+                style={styles.reviewInput}
+                placeholder="Comentário (opcional, máx. 1000 caracteres)"
+                multiline
+                numberOfLines={3}
+                maxLength={1000}
+                value={reviewComment}
+                onChangeText={setReviewComment}
+              />
+              <Text style={styles.charCount}>{reviewComment.length}/1000</Text>
+              <Pressable
+                style={({ pressed }) => [styles.reviewSubmitButton, pressed && { opacity: 0.8 }]}
+                onPress={handleSubmitReview}
+                disabled={reviewMutation.isPending}
+              >
+                <Text style={styles.reviewSubmitText}>
+                  {reviewMutation.isPending ? 'Enviando...' : 'Enviar avaliação'}
+                </Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {isCompleted && (alreadyReviewed || reviewSubmitted) ? (
+            <View style={[styles.sectionCard, styles.sectionCardGreen]}>
+              <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
+              <Text style={[styles.sectionBody, { color: '#15803d', marginTop: 4 }]}>
+                Você já avaliou esta contratação.
               </Text>
             </View>
-            <View style={styles.detailRow}>
-              <Ionicons name="time-outline" size={14} color={colors.primary} />
-              <Text style={styles.detailText}>{formatDurationMinutes(item.durationMinutes)}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Ionicons name="location-outline" size={14} color={colors.primary} />
-              <Text style={styles.detailText}>{item.jobFormattedAddress ?? item.jobAddress}</Text>
-            </View>
-          </View>
-        </View>
+          ) : null}
+        </ScrollView>
+      </KeyboardAvoidingView>
 
-        {/* Awaiting confirmation section */}
-        {isAwaitingConfirmation && (
-          <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="time-outline" size={18} color="#d97706" />
-              <Text style={styles.sectionTitle}>Aguardando confirmação de conclusão</Text>
-            </View>
-            <Text style={styles.sectionBody}>
-              Confirme se o serviço foi realizado conforme combinado.
-            </Text>
-
-            {companyAlreadyConfirmed && (
-              <View style={styles.confirmedRow}>
-                <Ionicons name="checkmark-circle" size={16} color="#16a34a" />
-                <Text style={styles.confirmedText}>A empresa já confirmou a conclusão.</Text>
-              </View>
-            )}
-
-            {!creatorAlreadyConfirmed && (
-              <View style={styles.actionButtons}>
-                <TouchableOpacity
-                  style={styles.confirmButton}
-                  onPress={handleConfirm}
-                  disabled={confirmMutation.isPending}
-                >
-                  <Text style={styles.confirmButtonText}>
-                    {confirmMutation.isPending ? 'Confirmando...' : 'Marcar como concluído'}
-                  </Text>
-                </TouchableOpacity>
-
-                {!showDisputeForm && (
-                  <TouchableOpacity
-                    style={styles.disputeLink}
-                    onPress={() => setShowDisputeForm(true)}
-                  >
-                    <Text style={styles.disputeLinkText}>Reportar problema</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
-
-            {creatorAlreadyConfirmed && !companyAlreadyConfirmed && item.contestDeadlineAt && (
-              <Text style={styles.deadlineText}>
-                Se a empresa não confirmar até{' '}
-                {new Date(item.contestDeadlineAt).toLocaleString('pt-BR')}, o contrato será concluído automaticamente.
-              </Text>
-            )}
-
-            {showDisputeForm && (
-              <View style={styles.disputeForm}>
-                <Text style={styles.disputeLabel}>Descreva o problema</Text>
-                <TextInput
-                  style={styles.disputeInput}
-                  placeholder="Informe o que aconteceu..."
-                  multiline
-                  numberOfLines={4}
-                  maxLength={2000}
-                  value={disputeReason}
-                  onChangeText={setDisputeReason}
-                />
-                <View style={styles.disputeFormButtons}>
-                  <TouchableOpacity
-                    style={styles.disputeSubmitButton}
-                    onPress={handleDispute}
-                    disabled={disputeMutation.isPending}
-                  >
-                    <Text style={styles.disputeSubmitText}>
-                      {disputeMutation.isPending ? 'Enviando...' : 'Abrir disputa'}
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowDisputeForm(false)}>
-                    <Text style={styles.disputeCancelText}>Cancelar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Disputed section */}
-        {isDisputed && (
-          <View style={[styles.sectionCard, styles.sectionCardRed]}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="alert-circle" size={18} color="#dc2626" />
-              <Text style={[styles.sectionTitle, { color: '#dc2626' }]}>Em disputa de conclusão</Text>
-            </View>
-            {item.completionDisputeReason ? (
-              <Text style={styles.sectionBody}>{item.completionDisputeReason}</Text>
-            ) : null}
-            <Text style={[styles.sectionBody, { marginTop: 4 }]}>
-              Nossa equipe está analisando. Avaliações ficam bloqueadas até a resolução.
-            </Text>
-          </View>
-        )}
-
-        {/* Review section */}
-        {isCompleted && !alreadyReviewed && !reviewSubmitted && (
-          <View style={styles.sectionCard}>
-            <Text style={styles.sectionTitle}>Avaliar esta contratação</Text>
-            <View style={styles.starsRow}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <TouchableOpacity key={star} onPress={() => setReviewRating(star)}>
-                  <Ionicons
-                    name={reviewRating >= star ? 'star' : 'star-outline'}
-                    size={32}
-                    color={reviewRating >= star ? '#f59e0b' : '#d1d5db'}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-            <TextInput
-              style={styles.reviewInput}
-              placeholder="Comentário (opcional, máx. 1000 caracteres)"
-              multiline
-              numberOfLines={3}
-              maxLength={1000}
-              value={reviewComment}
-              onChangeText={setReviewComment}
-            />
-            <Text style={styles.charCount}>{reviewComment.length}/1000</Text>
-            <TouchableOpacity
-              style={styles.reviewSubmitButton}
-              onPress={handleSubmitReview}
-              disabled={reviewMutation.isPending}
-            >
-              <Text style={styles.reviewSubmitText}>
-                {reviewMutation.isPending ? 'Enviando...' : 'Enviar avaliação'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {(isCompleted && (alreadyReviewed || reviewSubmitted)) && (
-          <View style={[styles.sectionCard, styles.sectionCardGreen]}>
-            <Ionicons name="checkmark-circle" size={18} color="#16a34a" />
-            <Text style={[styles.sectionBody, { color: '#15803d', marginTop: 4 }]}>
-              Você já avaliou esta contratação.
-            </Text>
-          </View>
-        )}
-      </ScrollView>
+      {/* Footer with contextual actions */}
+      <ProposalFooter
+        item={item}
+        isMutating={isMutating}
+        onAccept={handleAccept}
+        onReject={handleReject}
+        onCancel={handleCancel}
+        onChat={handleChat}
+      />
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background.light },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  errorText: { fontSize: 14, color: colors.text.secondary.light },
-  backButton: { paddingHorizontal: 16, paddingVertical: 8, backgroundColor: colors.primary, borderRadius: 8 },
-  backButtonText: { color: '#fff', fontWeight: '600' },
+  flex: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24 },
+  errorText: { fontSize: 15, color: colors.text.secondary.light, textAlign: 'center' },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+  },
+  retryButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  backLinkBtn: { paddingVertical: 8 },
+  backLinkText: { color: colors.text.secondary.light, fontSize: 14 },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -330,21 +455,7 @@ const styles = StyleSheet.create({
   backBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: '700', color: colors.text.primary.light },
   scrollContent: { padding: 16, gap: 12 },
-  card: {
-    backgroundColor: colors.surface.light,
-    borderRadius: 16,
-    padding: 16,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-  },
-  companyName: { fontSize: 18, fontWeight: '800', color: colors.text.primary.light },
-  amount: { fontSize: 22, fontWeight: '800', color: '#6a36d5' },
-  descriptionBox: { backgroundColor: '#f6f5f8', borderRadius: 10, padding: 10 },
-  descriptionText: { fontSize: 13, color: colors.text.secondary.light, lineHeight: 20 },
-  details: { gap: 6, marginTop: 4 },
-  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
-  detailText: { flex: 1, fontSize: 13, color: colors.text.secondary.light, lineHeight: 18 },
+  // ── AWAITING COMPLETION ──
   sectionCard: {
     backgroundColor: '#fffbeb',
     borderRadius: 16,
@@ -391,6 +502,7 @@ const styles = StyleSheet.create({
   },
   disputeSubmitText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   disputeCancelText: { color: '#6b7280', fontSize: 13 },
+  // ── REVIEW ──
   starsRow: { flexDirection: 'row', gap: 8, marginVertical: 4 },
   reviewInput: {
     borderWidth: 1,

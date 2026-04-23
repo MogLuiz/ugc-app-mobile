@@ -23,8 +23,10 @@ export const chatKeys = {
 
 export const opportunityKeys = {
   all: ['opportunities'] as const,
+  preview: (limit = 2) => [...opportunityKeys.all, 'preview', limit] as const,
   list: (params?: { page?: number; limit?: number }) =>
     [...opportunityKeys.all, 'list', params?.page ?? 1, params?.limit ?? 50] as const,
+  infiniteList: (limit = 24) => [...opportunityKeys.all, 'infinite-list', limit] as const,
   detail: (id: string) => [...opportunityKeys.all, 'detail', id] as const,
 }
 

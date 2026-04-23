@@ -21,6 +21,7 @@ import { CreatorKpiSection } from './_home/CreatorKpiSection'
 import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
 import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSection'
 import { MessagesShortcutCard } from './_home/MessagesShortcutCard'
+import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportunitiesPreviewSection'
 
 function getFirstName(name?: string | null): string {
   if (!name) return ''
@@ -105,6 +106,8 @@ export default function HomeScreen() {
         {user?.name ? <Text style={styles.greeting}>Olá, {getFirstName(user.name)}</Text> : null}
 
         <CreatorKpiSection items={kpis} isLoading={isKpiLoading} error={kpiError} />
+
+        <AvailableOpportunitiesPreviewSection />
 
         <UpcomingPreviewSection
           items={upcoming}

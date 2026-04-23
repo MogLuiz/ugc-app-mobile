@@ -1,35 +1,144 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useQueries } from '@tanstack/react-query'
+import { creatorDashboardKeys, creatorPayoutKeys, chatKeys } from '@/lib/query-keys'
+import {
+  fetchCreatorDashboardSummary,
+  fetchCreatorInvites,
+  fetchCreatorPayouts,
+  fetchCreatorUpcoming,
+  fetchConversations,
+} from '@/modules/creator-home/service'
+import {
+  adaptCreatorKpis,
+  adaptInvites,
+  adaptUpcoming,
+  deriveUnreadCount,
+} from '@/modules/creator-home/adapters'
 import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
+import { CreatorKpiSection } from './_home/CreatorKpiSection'
+import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
+import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSection'
+import { MessagesShortcutCard } from './_home/MessagesShortcutCard'
+
+function getFirstName(name?: string | null): string {
+  if (!name) return ''
+  return name.trim().split(/\s+/)[0] ?? ''
+}
 
 export default function HomeScreen() {
   const { user } = useSession()
 
+  const [summaryQuery, payoutsQuery, invitesQuery, upcomingQuery, conversationsQuery] = useQueries({
+    queries: [
+      {
+        queryKey: creatorDashboardKeys.summary(),
+        queryFn: fetchCreatorDashboardSummary,
+        staleTime: 60_000,
+      },
+      {
+        queryKey: creatorPayoutKeys.list(),
+        queryFn: fetchCreatorPayouts,
+        staleTime: 60_000,
+      },
+      {
+        queryKey: creatorDashboardKeys.invites(),
+        queryFn: fetchCreatorInvites,
+        staleTime: 60_000,
+      },
+      {
+        queryKey: creatorDashboardKeys.upcoming(),
+        queryFn: fetchCreatorUpcoming,
+        staleTime: 60_000,
+      },
+      {
+        queryKey: chatKeys.conversations(),
+        queryFn: fetchConversations,
+        staleTime: 30_000,
+      },
+    ],
+  })
+
+  const isRefreshing =
+    summaryQuery.isRefetching ||
+    payoutsQuery.isRefetching ||
+    invitesQuery.isRefetching ||
+    upcomingQuery.isRefetching ||
+    conversationsQuery.isRefetching
+
+  function onRefresh() {
+    void summaryQuery.refetch()
+    void payoutsQuery.refetch()
+    void invitesQuery.refetch()
+    void upcomingQuery.refetch()
+    void conversationsQuery.refetch()
+  }
+
+  const hasKpiData = Boolean(summaryQuery.data && payoutsQuery.data)
+  const isKpiLoading = !hasKpiData && (summaryQuery.isLoading || payoutsQuery.isLoading)
+  const kpiError =
+    !hasKpiData && (summaryQuery.error || payoutsQuery.error)
+      ? 'Não foi possível carregar o resumo.'
+      : null
+  const kpis =
+    summaryQuery.data && payoutsQuery.data
+      ? adaptCreatorKpis(summaryQuery.data, payoutsQuery.data)
+      : []
+  const invites = adaptInvites(invitesQuery.data ?? [])
+  const upcoming = adaptUpcoming(upcomingQuery.data ?? [])
+  const unreadCount = deriveUnreadCount(conversationsQuery.data ?? [])
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Início</Text>
-      {user ? (
-        <Text style={styles.subtitle}>Olá, {user.name}</Text>
-      ) : null}
-    </View>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        {user?.name ? <Text style={styles.greeting}>Olá, {getFirstName(user.name)}</Text> : null}
+
+        <CreatorKpiSection items={kpis} isLoading={isKpiLoading} error={kpiError} />
+
+        <UpcomingPreviewSection
+          items={upcoming}
+          isLoading={upcomingQuery.isLoading}
+          error={upcomingQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
+        />
+
+        <PendingInvitesPreviewSection
+          items={invites}
+          isLoading={invitesQuery.isLoading}
+          error={invitesQuery.error ? 'Não foi possível carregar os convites.' : null}
+        />
+
+        <MessagesShortcutCard unreadCount={unreadCount} isLoading={conversationsQuery.isLoading} />
+      </ScrollView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: colors.background.light,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text.primary.light,
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 24,
   },
-  subtitle: {
-    fontSize: 14,
-    color: colors.text.secondary.light,
-    marginTop: 8,
+  greeting: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: colors.text.primary.light,
+    letterSpacing: -0.4,
   },
 })

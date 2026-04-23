@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { MobileEmptyState } from '@/components/MobileEmptyState'
+import { AppScreenHeader } from '@/components/AppScreenHeader'
 import { colors } from '@/theme/colors'
 import {
   extractWorkTypes,
@@ -199,11 +200,8 @@ export default function OportunidadesScreen() {
           />
         }
       >
-        <View style={styles.hero}>
-          <Text style={styles.title}>Oportunidades</Text>
-          <Text style={styles.subtitle}>
-            Encontre vagas abertas e candidate-se para trabalhar com empresas locais.
-          </Text>
+        <View style={styles.header}>
+          <AppScreenHeader title="Oportunidades" />
         </View>
 
         {showBanner ? <Banner /> : null}
@@ -211,7 +209,6 @@ export default function OportunidadesScreen() {
         {!showInitialLoading && !showAddressBlocked && !showGenericError ? (
           <View style={styles.toolbar}>
             <View style={styles.toolbarInfo}>
-              <Text style={styles.toolbarTitle}>Oportunidades disponíveis</Text>
               <Text style={styles.toolbarSubtitle}>
                 {sortedItems.length} {sortedItems.length === 1 ? 'vaga aberta' : 'vagas abertas'}
               </Text>
@@ -457,19 +454,8 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     gap: 16,
   },
-  hero: {
-    gap: 6,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '900',
-    letterSpacing: -0.7,
-    color: '#0f172a',
-  },
-  subtitle: {
-    fontSize: 15,
-    lineHeight: 22,
-    color: '#64748b',
+  header: {
+    paddingHorizontal: 0,
   },
   banner: {
     flexDirection: 'row',
@@ -503,15 +489,11 @@ const styles = StyleSheet.create({
   },
   toolbarInfo: {
     flex: 1,
-  },
-  toolbarTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0f172a',
+    justifyContent: 'center',
   },
   toolbarSubtitle: {
-    marginTop: 4,
     fontSize: 13,
+    fontWeight: '600',
     color: '#64748b',
   },
   toolbarActions: {

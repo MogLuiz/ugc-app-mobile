@@ -12,6 +12,7 @@ import type { ContractRequestItem } from '@/modules/contract-requests/types'
 import { colors } from '@/theme/colors'
 import { ProposalCard } from '@/components/proposals/ProposalCard'
 import { ProposalSkeleton } from '@/components/proposals/ProposalSkeleton'
+import { AppScreenHeader } from '@/components/AppScreenHeader'
 
 // TODO: replace FlatList with FlashList (@shopify/flash-list) when KAN-50 is done
 
@@ -147,7 +148,7 @@ export default function PropostasScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>OFERTAS</Text>
+        <AppScreenHeader title="Ofertas" />
       </View>
 
       <View style={styles.tabBar}>
@@ -202,22 +203,6 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-  },
-  eyebrow: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.text.secondary.light,
-    letterSpacing: 2,
-    marginBottom: 6,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text.primary.light,
-    letterSpacing: -0.5,
-    lineHeight: 34,
   },
   tabBar: {
     flexDirection: 'row',

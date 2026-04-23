@@ -295,16 +295,6 @@ export default function OportunidadesScreen() {
               icon={<EmptyIllustration />}
               title="Nenhuma oportunidade disponível"
               description="Novas oportunidades aparecem aqui quando empresas abrirem vagas. Volte em breve."
-              actions={
-                <View style={styles.centeredActions}>
-                  <Pressable
-                    style={({ pressed }) => [styles.outlineButton, pressed && styles.pressed]}
-                    onPress={() => void query.refetch()}
-                  >
-                    <Text style={styles.outlineButtonText}>Atualizar lista</Text>
-                  </Pressable>
-                </View>
-              }
             />
           </View>
         ) : null}
@@ -488,8 +478,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   toolbarInfo: {
-    flex: 1,
-    justifyContent: 'center',
+    alignSelf: 'center',
   },
   toolbarSubtitle: {
     fontSize: 13,

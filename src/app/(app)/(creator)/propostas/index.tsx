@@ -23,6 +23,15 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'FINALIZED', label: 'Finalizadas' },
 ]
 
+function dedupeById(items: ContractRequestItem[]): ContractRequestItem[] {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) return false
+    seen.add(item.id)
+    return true
+  })
+}
+
 type EmptyConfig = {
   title: string
   description: string
@@ -93,14 +102,14 @@ export default function PropostasScreen() {
     const accepted = acceptedQuery.data ?? []
     const awaitingConfirmation = awaitingConfirmationQuery.data ?? []
     const disputes = disputeQuery.data ?? []
-    return [...awaitingConfirmation, ...disputes, ...accepted].sort(sortByStartsAtDesc)
+    return dedupeById([...awaitingConfirmation, ...disputes, ...accepted]).sort(sortByStartsAtDesc)
   }, [acceptedQuery.data, awaitingConfirmationQuery.data, disputeQuery.data])
 
   const finalizedItems = useMemo(() => {
     const completed = completedQuery.data ?? []
     const rejected = rejectedQuery.data ?? []
     const cancelled = cancelledQuery.data ?? []
-    return [...completed, ...rejected, ...cancelled].sort(sortByStartsAtDesc)
+    return dedupeById([...completed, ...rejected, ...cancelled]).sort(sortByStartsAtDesc)
   }, [completedQuery.data, rejectedQuery.data, cancelledQuery.data])
 
   const activeItems: ContractRequestItem[] = (() => {
@@ -112,7 +121,9 @@ export default function PropostasScreen() {
   const isLoading = (() => {
     if (activeTab === 'PENDING') return pendingQuery.isLoading
     if (activeTab === 'ACCEPTED')
-      return acceptedQuery.isLoading || awaitingConfirmationQuery.isLoading || disputeQuery.isLoading
+      return (
+        acceptedQuery.isLoading || awaitingConfirmationQuery.isLoading || disputeQuery.isLoading
+      )
     return completedQuery.isLoading || rejectedQuery.isLoading || cancelledQuery.isLoading
   })()
 
@@ -149,13 +160,9 @@ export default function PropostasScreen() {
               style={[styles.tabItem, isActive && styles.tabItemActive]}
               onPress={() => setActiveTab(tab.id)}
             >
-              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>
-                {tab.label}
-              </Text>
+              <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
               {count !== null ? (
-                <Text style={[styles.tabCount, isActive && styles.tabCountActive]}>
-                  {count}
-                </Text>
+                <Text style={[styles.tabCount, isActive && styles.tabCountActive]}>{count}</Text>
               ) : null}
             </Pressable>
           )

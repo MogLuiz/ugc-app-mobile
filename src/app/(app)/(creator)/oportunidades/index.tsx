@@ -15,7 +15,6 @@ import {
 } from '@/modules/opportunities/helpers'
 import { useInfiniteOpportunitiesQuery } from '@/modules/opportunities/queries'
 import { OpportunityCard } from '@/modules/opportunities/components/OpportunityCard'
-import { OpportunityListSkeleton } from '@/modules/opportunities/components/OpportunityListSkeleton'
 import type { OpportunityFilters, SortOption } from '@/modules/opportunities/types'
 
 const DEFAULT_FILTERS: OpportunityFilters = {
@@ -87,6 +86,41 @@ function FilterChip({
         {label}
       </Text>
     </Pressable>
+  )
+}
+
+function SkeletonLine({ width, height = 12 }: { width: string | number; height?: number }) {
+  return (
+    <View
+      style={[styles.skeletonLine, { width: width as number, height, borderRadius: height / 2 }]}
+    />
+  )
+}
+
+function OpportunityListSkeleton({ items = 4 }: { items?: number }) {
+  return (
+    <View style={styles.list}>
+      {Array.from({ length: items }).map((_, index) => (
+        <View key={index} style={styles.skeletonCard}>
+          <View style={styles.skeletonHeader}>
+            <SkeletonLine width="36%" height={18} />
+            <View style={styles.skeletonAmountWrap}>
+              <SkeletonLine width={36} height={10} />
+              <SkeletonLine width={82} height={22} />
+            </View>
+          </View>
+          <View style={styles.skeletonBody}>
+            <SkeletonLine width="92%" />
+            <SkeletonLine width="68%" />
+          </View>
+          <View style={styles.skeletonMeta}>
+            <SkeletonLine width="42%" />
+            <SkeletonLine width="38%" />
+            <SkeletonLine width="88%" />
+          </View>
+        </View>
+      ))}
+    </View>
   )
 }
 
@@ -537,6 +571,33 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 14,
+  },
+  skeletonCard: {
+    backgroundColor: colors.surface.light,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    padding: 18,
+    opacity: 0.55,
+    gap: 14,
+  },
+  skeletonHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  skeletonAmountWrap: {
+    alignItems: 'flex-end',
+    gap: 8,
+  },
+  skeletonBody: {
+    gap: 8,
+  },
+  skeletonMeta: {
+    gap: 10,
+  },
+  skeletonLine: {
+    backgroundColor: colors.border.light,
   },
   inlineError: {
     borderRadius: 14,

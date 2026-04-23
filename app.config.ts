@@ -1,5 +1,18 @@
 import { ExpoConfig, ConfigContext } from 'expo/config'
 
+const androidConfig = {
+  package: 'com.ugclocal.app',
+  usesCleartextTraffic: (process.env.EXPO_PUBLIC_API_URL ?? '').startsWith('http://'),
+  adaptiveIcon: {
+    backgroundColor: '#E6F4FE',
+    foregroundImage: './assets/images/android-icon-foreground.png',
+    backgroundImage: './assets/images/android-icon-background.png',
+    monochromeImage: './assets/images/android-icon-monochrome.png',
+  },
+  edgeToEdgeEnabled: true,
+  predictiveBackGestureEnabled: false,
+} as ExpoConfig['android'] & { usesCleartextTraffic?: boolean }
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'UGC Local',
@@ -14,17 +27,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supportsTablet: false,
     bundleIdentifier: 'com.ugclocal.app',
   },
-  android: {
-    package: 'com.ugclocal.app',
-    adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
-      foregroundImage: './assets/images/android-icon-foreground.png',
-      backgroundImage: './assets/images/android-icon-background.png',
-      monochromeImage: './assets/images/android-icon-monochrome.png',
-    },
-    edgeToEdgeEnabled: true,
-    predictiveBackGestureEnabled: false,
-  },
+  android: androidConfig,
   web: {
     output: 'static',
     favicon: './assets/images/favicon.png',

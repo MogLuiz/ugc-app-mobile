@@ -1,6 +1,7 @@
-import { RefreshControl, ScrollView, StyleSheet, Text } from 'react-native'
+import { RefreshControl, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueries } from '@tanstack/react-query'
+import { useRouter } from 'expo-router'
 import { creatorDashboardKeys, creatorPayoutKeys, chatKeys } from '@/lib/query-keys'
 import {
   fetchCreatorDashboardSummary,
@@ -14,6 +15,7 @@ import {
   adaptUpcoming,
   deriveUnreadCount,
 } from '@/modules/creator-home/adapters'
+import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
 import { useMyCreatorPendingContractRequestsQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
@@ -23,12 +25,8 @@ import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSecti
 import { MessagesShortcutCard } from './_home/MessagesShortcutCard'
 import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportunitiesPreviewSection'
 
-function getFirstName(name?: string | null): string {
-  if (!name) return ''
-  return name.trim().split(/\s+/)[0] ?? ''
-}
-
 export default function HomeScreen() {
+  const router = useRouter()
   const { user } = useSession()
   const pendingInvitesQuery = useMyCreatorPendingContractRequestsQuery()
 
@@ -99,7 +97,11 @@ export default function HomeScreen() {
           />
         }
       >
-        {user?.name ? <Text style={styles.greeting}>Olá, {getFirstName(user.name)}</Text> : null}
+        <CreatorDashboardHeader
+          userName={user?.name}
+          avatarUrl={user?.avatarUrl}
+          onPressAvatar={() => router.push('/(creator)/perfil' as never)}
+        />
 
         <CreatorKpiSection items={kpis} isLoading={isKpiLoading} error={kpiError} />
 
@@ -135,11 +137,5 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 32,
     gap: 24,
-  },
-  greeting: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: colors.text.primary.light,
-    letterSpacing: -0.4,
   },
 })

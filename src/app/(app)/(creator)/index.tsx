@@ -4,17 +4,17 @@ import { useQueries } from '@tanstack/react-query'
 import { creatorDashboardKeys, creatorPayoutKeys, chatKeys } from '@/lib/query-keys'
 import {
   fetchCreatorDashboardSummary,
-  fetchCreatorInvites,
   fetchCreatorPayouts,
   fetchCreatorUpcoming,
   fetchConversations,
 } from '@/modules/creator-home/service'
 import {
   adaptCreatorKpis,
-  adaptInvites,
+  adaptWorkInvites,
   adaptUpcoming,
   deriveUnreadCount,
 } from '@/modules/creator-home/adapters'
+import { useMyCreatorPendingContractRequestsQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
 import { CreatorKpiSection } from './_home/CreatorKpiSection'
@@ -30,8 +30,9 @@ function getFirstName(name?: string | null): string {
 
 export default function HomeScreen() {
   const { user } = useSession()
+  const pendingInvitesQuery = useMyCreatorPendingContractRequestsQuery()
 
-  const [summaryQuery, payoutsQuery, invitesQuery, upcomingQuery, conversationsQuery] = useQueries({
+  const [summaryQuery, payoutsQuery, upcomingQuery, conversationsQuery] = useQueries({
     queries: [
       {
         queryKey: creatorDashboardKeys.summary(),
@@ -41,11 +42,6 @@ export default function HomeScreen() {
       {
         queryKey: creatorPayoutKeys.list(),
         queryFn: fetchCreatorPayouts,
-        staleTime: 60_000,
-      },
-      {
-        queryKey: creatorDashboardKeys.invites(),
-        queryFn: fetchCreatorInvites,
         staleTime: 60_000,
       },
       {
@@ -64,14 +60,14 @@ export default function HomeScreen() {
   const isRefreshing =
     summaryQuery.isRefetching ||
     payoutsQuery.isRefetching ||
-    invitesQuery.isRefetching ||
+    pendingInvitesQuery.isRefetching ||
     upcomingQuery.isRefetching ||
     conversationsQuery.isRefetching
 
   function onRefresh() {
     void summaryQuery.refetch()
     void payoutsQuery.refetch()
-    void invitesQuery.refetch()
+    void pendingInvitesQuery.refetch()
     void upcomingQuery.refetch()
     void conversationsQuery.refetch()
   }
@@ -86,7 +82,7 @@ export default function HomeScreen() {
     summaryQuery.data && payoutsQuery.data
       ? adaptCreatorKpis(summaryQuery.data, payoutsQuery.data)
       : []
-  const invites = adaptInvites(invitesQuery.data ?? [])
+  const invites = adaptWorkInvites(pendingInvitesQuery.data ?? [])
   const upcoming = adaptUpcoming(upcomingQuery.data ?? [])
   const unreadCount = deriveUnreadCount(conversationsQuery.data ?? [])
 
@@ -109,16 +105,18 @@ export default function HomeScreen() {
 
         <AvailableOpportunitiesPreviewSection />
 
+        <PendingInvitesPreviewSection
+          items={invites}
+          isLoading={pendingInvitesQuery.isLoading}
+          error={
+            pendingInvitesQuery.error ? 'Não foi possível carregar os convites de trabalho.' : null
+          }
+        />
+
         <UpcomingPreviewSection
           items={upcoming}
           isLoading={upcomingQuery.isLoading}
           error={upcomingQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
-        />
-
-        <PendingInvitesPreviewSection
-          items={invites}
-          isLoading={invitesQuery.isLoading}
-          error={invitesQuery.error ? 'Não foi possível carregar os convites.' : null}
         />
 
         <MessagesShortcutCard unreadCount={unreadCount} isLoading={conversationsQuery.isLoading} />

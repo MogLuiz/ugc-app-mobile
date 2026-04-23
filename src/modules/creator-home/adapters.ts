@@ -1,4 +1,5 @@
 import { formatAmount, formatDurationMinutes, formatShortDate } from '@/lib/formatters'
+import type { ContractRequestItem } from '@/modules/contract-requests/types'
 import type {
   ConversationSummaryItem,
   CreatorDashboardSummaryApi,
@@ -8,6 +9,7 @@ import type {
   CreatorUpcomingApi,
   InvitePreviewVm,
   UpcomingPreviewVm,
+  WorkInvitePreviewVm,
 } from './types'
 
 export function adaptCreatorKpis(
@@ -66,10 +68,47 @@ export function adaptInvites(rows: CreatorInviteApi[]): InvitePreviewVm[] {
     dateDisplay: formatShortDate(row.proposedDate),
     paymentDisplay: formatAmount(row.payment),
     distanceDisplay:
-      row.distanceKm != null
-        ? `${row.distanceKm.toFixed(1).replace('.', ',')} km`
-        : null,
+      row.distanceKm != null ? `${row.distanceKm.toFixed(1).replace('.', ',')} km` : null,
   }))
+}
+
+function compareInvitesByStartsAt(a: ContractRequestItem, b: ContractRequestItem): number {
+  const startsAtA = new Date(a.startsAt).getTime()
+  const startsAtB = new Date(b.startsAt).getTime()
+  const normalizedStartsAtA = Number.isNaN(startsAtA) ? Number.POSITIVE_INFINITY : startsAtA
+  const normalizedStartsAtB = Number.isNaN(startsAtB) ? Number.POSITIVE_INFINITY : startsAtB
+
+  if (normalizedStartsAtA !== normalizedStartsAtB) {
+    return normalizedStartsAtA - normalizedStartsAtB
+  }
+
+  return a.id.localeCompare(b.id, 'pt-BR')
+}
+
+function getInviteTitle(row: ContractRequestItem): string {
+  return row.campaignTitle ?? row.jobTypeName ?? 'Convite de trabalho'
+}
+
+function getInvitePaymentValue(row: ContractRequestItem): number {
+  return row.pricing?.totalAmount ?? row.totalAmount ?? row.totalPrice
+}
+
+function getInviteDistanceDisplay(row: ContractRequestItem): string | null {
+  return row.creatorDistance?.formatted ?? null
+}
+
+export function adaptWorkInvites(rows: ContractRequestItem[], limit = 2): WorkInvitePreviewVm[] {
+  return [...rows]
+    .sort(compareInvitesByStartsAt)
+    .map((row) => ({
+      id: row.id,
+      companyName: row.companyName ?? 'Empresa',
+      title: getInviteTitle(row),
+      dateDisplay: formatShortDate(row.startsAt),
+      paymentDisplay: formatAmount(getInvitePaymentValue(row)),
+      distanceDisplay: getInviteDistanceDisplay(row),
+    }))
+    .slice(0, limit)
 }
 
 export function adaptUpcoming(rows: CreatorUpcomingApi[]): UpcomingPreviewVm[] {

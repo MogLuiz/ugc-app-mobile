@@ -58,6 +58,15 @@ export type InvitePreviewVm = {
   distanceDisplay: string | null
 }
 
+export type WorkInvitePreviewVm = {
+  id: string
+  companyName: string
+  title: string
+  dateDisplay: string
+  paymentDisplay: string
+  distanceDisplay: string | null
+}
+
 export type UpcomingPreviewVm = {
   id: string
   campaignName: string

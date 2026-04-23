@@ -52,8 +52,8 @@ export function useAcceptContractRequestMutation() {
   return useMutation({
     mutationFn: (contractRequestId: string) => acceptContractRequest(contractRequestId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: contractRequestKeys.all })
-      void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: contractRequestKeys.creatorPending() })
+      void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.summary() })
     },
   })
 }
@@ -64,8 +64,8 @@ export function useRejectContractRequestMutation() {
     mutationFn: (params: { contractRequestId: string; rejectionReason?: string }) =>
       rejectContractRequest(params.contractRequestId, params.rejectionReason),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: contractRequestKeys.all })
-      void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: contractRequestKeys.creatorPending() })
+      void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.summary() })
     },
   })
 }

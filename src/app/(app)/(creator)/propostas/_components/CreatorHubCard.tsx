@@ -9,20 +9,6 @@ import {
 import type { CreatorHubItem } from '@/modules/contract-requests/creator-hub.types'
 import { colors } from '@/theme/colors'
 
-function kindLabel(item: CreatorHubItem): string {
-  return item.kind === 'open_offer_application' ? 'Candidatura enviada' : 'Convite direto'
-}
-
-function kindStyle(item: CreatorHubItem) {
-  return item.kind === 'open_offer_application' ? styles.badgeApplication : styles.badgeInvite
-}
-
-function kindTextStyle(item: CreatorHubItem) {
-  return item.kind === 'open_offer_application'
-    ? styles.badgeApplicationText
-    : styles.badgeInviteText
-}
-
 function resolveHref(item: CreatorHubItem): string {
   if (item.kind === 'open_offer_application' && item.openOfferId) {
     return `/(creator)/oportunidades/${item.openOfferId}`
@@ -60,17 +46,7 @@ export function CreatorHubCard({
         style={({ pressed }) => [styles.cardBody, pressed && styles.cardPressed]}
         onPress={handleCardPress}
       >
-        {/* Top row: badge + amount */}
-        <View style={styles.topRow}>
-          <View style={[styles.badge, kindStyle(item)]}>
-            <Text style={[styles.badgeText, kindTextStyle(item)]}>{kindLabel(item)}</Text>
-          </View>
-          {item.totalAmount != null && (
-            <Text style={styles.amount}>{formatAmount(item.totalAmount)}</Text>
-          )}
-        </View>
-
-        {/* Company + job type */}
+        {/* Company + job type + amount */}
         <View style={styles.identityBlock}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{getInitials(item.company.name)}</Text>
@@ -83,6 +59,9 @@ export function CreatorHubCard({
               {item.title}
             </Text>
           </View>
+          {item.totalAmount != null && (
+            <Text style={styles.amount}>{formatAmount(item.totalAmount)}</Text>
+          )}
           <Ionicons name="chevron-forward" size={16} color={colors.border.light} />
         </View>
 
@@ -248,36 +227,6 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
 
-  // Top row
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  badge: {
-    borderRadius: 100,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  badgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  badgeInvite: {
-    backgroundColor: '#fef3c7',
-  },
-  badgeInviteText: {
-    color: '#92400e',
-  },
-  badgeApplication: {
-    backgroundColor: '#ede9fb',
-  },
-  badgeApplicationText: {
-    color: '#5b21b6',
-  },
   amount: {
     fontSize: 18,
     fontWeight: '900',

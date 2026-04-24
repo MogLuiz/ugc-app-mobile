@@ -89,7 +89,10 @@ export function adaptHubUpcoming(
         companyName: item.company.name,
         dateDisplay: formatShortDate(item.startsAt!),
         timeDisplay: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        locationDisplay: item.locationDisplay,
+        locationDisplay:
+          item.displayStatus === 'AWAITING_CONFIRMATION'
+            ? null
+            : (item.address ?? item.locationDisplay),
         durationDisplay: '',
         statusBadge,
         primaryAction:

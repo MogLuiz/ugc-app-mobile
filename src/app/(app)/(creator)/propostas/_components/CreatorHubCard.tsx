@@ -47,6 +47,12 @@ export function CreatorHubCard({
   }
 
   const showActions = item.primaryAction !== 'VIEW'
+  const showAddress =
+    (item.displayStatus === 'PENDING_INVITE' ||
+      item.displayStatus === 'APPLICATION_PENDING' ||
+      item.displayStatus === 'ACCEPTED') &&
+    item.address &&
+    item.address !== 'Local a combinar'
 
   return (
     <View style={styles.card}>
@@ -94,11 +100,11 @@ export function CreatorHubCard({
             </View>
           ) : null}
 
-          {item.locationDisplay ? (
+          {showAddress ? (
             <View style={styles.metaChip}>
               <Ionicons name="location-outline" size={11} color={colors.text.secondary.light} />
               <Text style={styles.metaText} numberOfLines={1}>
-                {item.locationDisplay}
+                {item.address}
               </Text>
             </View>
           ) : null}

@@ -1,30 +1,5 @@
 export type CreatorDashboardSummaryApi = {
-  confirmedCampaigns: number
-  pendingInvites: number
-  monthlyEarnings: number
   averageRating: number | null
-}
-
-export type CreatorInviteApi = {
-  id: string
-  companyName: string
-  campaignTitle: string
-  proposedDate: string
-  payment: number
-  status: 'PENDING'
-  distanceKm?: number | null
-  expiresAt?: string | null
-}
-
-export type CreatorUpcomingApi = {
-  id: string
-  campaignName: string
-  companyName: string
-  date: string
-  time: string
-  location: string
-  duration: number
-  status: 'Confirmada' | 'Pendente' | 'Concluída'
 }
 
 export type ConversationSummaryItem = {
@@ -49,15 +24,6 @@ export type CreatorKpiCardVm = {
   accent?: 'primary'
 }
 
-export type InvitePreviewVm = {
-  id: string
-  companyName: string
-  campaignTitle: string
-  dateDisplay: string
-  paymentDisplay: string
-  distanceDisplay: string | null
-}
-
 export type WorkInvitePreviewVm = {
   id: string
   companyName: string
@@ -73,7 +39,9 @@ export type UpcomingPreviewVm = {
   companyName: string
   dateDisplay: string
   timeDisplay: string
-  locationDisplay: string
+  locationDisplay: string | null
   durationDisplay: string
   statusBadge: string
+  primaryAction: 'CONFIRM_OR_DISPUTE' | 'VIEW'
+  href: string
 }

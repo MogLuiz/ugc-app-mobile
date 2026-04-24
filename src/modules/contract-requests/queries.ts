@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { contractRequestKeys, creatorDashboardKeys } from '@/lib/query-keys'
+import { contractRequestKeys, creatorDashboardKeys, creatorHubKeys } from '@/lib/query-keys'
 import {
   acceptContractRequest,
   cancelContractRequest,
@@ -7,42 +7,25 @@ import {
   disputeCompletion,
   getContractReviews,
   getContractRequestById,
-  getMyCreatorContractRequests,
-  getMyCreatorPendingContractRequests,
+  getCreatorOffersHub,
   rejectContractRequest,
   submitReview,
 } from './service'
 import type { CreateReviewPayload } from './types'
 
+export function useCreatorOffersHubQuery(enabled = true) {
+  return useQuery({
+    queryKey: creatorHubKeys.hub(),
+    queryFn: getCreatorOffersHub,
+    staleTime: 60_000,
+    enabled,
+  })
+}
+
 export function useContractRequestDetailQuery(contractRequestId: string, enabled = true) {
   return useQuery({
     queryKey: contractRequestKeys.detail(contractRequestId),
     queryFn: () => getContractRequestById(contractRequestId),
-    enabled,
-  })
-}
-
-export function useMyCreatorPendingContractRequestsQuery(enabled = true) {
-  return useQuery({
-    queryKey: contractRequestKeys.creatorPending(),
-    queryFn: getMyCreatorPendingContractRequests,
-    enabled,
-  })
-}
-
-export function useMyCreatorContractRequestsQuery(
-  status:
-    | 'ACCEPTED'
-    | 'COMPLETED'
-    | 'REJECTED'
-    | 'CANCELLED'
-    | 'AWAITING_COMPLETION_CONFIRMATION'
-    | 'COMPLETION_DISPUTE',
-  enabled = true,
-) {
-  return useQuery({
-    queryKey: contractRequestKeys.creatorList(status),
-    queryFn: () => getMyCreatorContractRequests(status),
     enabled,
   })
 }
@@ -54,6 +37,7 @@ export function useAcceptContractRequestMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contractRequestKeys.creatorPending() })
       void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.summary() })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.all })
     },
   })
 }
@@ -66,6 +50,7 @@ export function useRejectContractRequestMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contractRequestKeys.creatorPending() })
       void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.summary() })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.all })
     },
   })
 }
@@ -77,6 +62,7 @@ export function useCancelContractRequestMutation() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contractRequestKeys.all })
       void queryClient.invalidateQueries({ queryKey: creatorDashboardKeys.all })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.all })
     },
   })
 }
@@ -87,6 +73,7 @@ export function useConfirmCompletionMutation() {
     mutationFn: (contractRequestId: string) => confirmCompletion(contractRequestId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contractRequestKeys.all })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.all })
     },
   })
 }
@@ -98,6 +85,7 @@ export function useDisputeCompletionMutation() {
       disputeCompletion(params.contractRequestId, params.reason),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: contractRequestKeys.all })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.all })
     },
   })
 }

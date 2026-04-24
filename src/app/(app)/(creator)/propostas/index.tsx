@@ -1,18 +1,16 @@
-import { useMemo, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useCallback } from 'react'
+import { FlatList, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
-import {
-  useMyCreatorContractRequestsQuery,
-  useMyCreatorPendingContractRequestsQuery,
-} from '@/modules/contract-requests/queries'
-import { sortByStartsAtDesc } from '@/modules/contract-requests/utils'
-import type { ContractRequestItem } from '@/modules/contract-requests/types'
+import { useState } from 'react'
+import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
+import type { CreatorHubItem } from '@/modules/contract-requests/creator-hub.types'
 import { colors } from '@/theme/colors'
-import { ProposalCard } from '@/components/proposals/ProposalCard'
 import { ProposalSkeleton } from '@/components/proposals/ProposalSkeleton'
 import { AppScreenHeader } from '@/components/AppScreenHeader'
+import { CreatorHubCard } from './_components/CreatorHubCard'
+import { PendingTabContent } from './_components/PendingTabContent'
 
 // TODO: replace FlatList with FlashList (@shopify/flash-list) when KAN-50 is done
 
@@ -20,63 +18,15 @@ type Tab = 'PENDING' | 'ACCEPTED' | 'FINALIZED'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'PENDING', label: 'Pendentes' },
-  { id: 'ACCEPTED', label: 'Aceitas' },
+  { id: 'ACCEPTED', label: 'Em andamento' },
   { id: 'FINALIZED', label: 'Finalizadas' },
 ]
 
-function dedupeById(items: ContractRequestItem[]): ContractRequestItem[] {
-  const seen = new Set<string>()
-  return items.filter((item) => {
-    if (seen.has(item.id)) return false
-    seen.add(item.id)
-    return true
-  })
-}
-
-type EmptyConfig = {
-  title: string
-  description: string
-  cta?: { label: string; route: string }
-}
-
-const EMPTY_STATE: Record<Tab, EmptyConfig> = {
-  PENDING: {
-    title: 'Nenhuma oferta por enquanto',
-    description: 'Assim que empresas enviarem propostas, elas aparecerão aqui.',
-    cta: {
-      label: 'Complete seu perfil para receber mais ofertas',
-      route: '/(creator)/perfil',
-    },
-  },
-  ACCEPTED: {
-    title: 'Nenhum trabalho aceito',
-    description: 'Quando uma proposta for aceita, ela aparecerá aqui.',
-  },
-  FINALIZED: {
-    title: 'Nenhuma oferta finalizada',
-    description: 'Propostas concluídas, recusadas ou canceladas aparecerão aqui.',
-  },
-}
-
-function EmptyState({ config, onCtaPress }: { config: EmptyConfig; onCtaPress?: () => void }) {
+function EmptyTab({ title, description }: { title: string; description: string }) {
   return (
     <View style={styles.emptyContainer}>
-      <View style={styles.emptyIconWrap}>
-        <Ionicons name="pricetag-outline" size={28} color="#cbd5e1" />
-        <View style={styles.emptyBadge}>
-          <Text style={styles.emptyBadgeText}>0</Text>
-        </View>
-      </View>
-
-      <Text style={styles.emptyTitle}>{config.title}</Text>
-      <Text style={styles.emptyDescription}>{config.description}</Text>
-
-      {config.cta && onCtaPress ? (
-        <Pressable style={styles.emptyCta} onPress={onCtaPress}>
-          <Text style={styles.emptyCtaText}>{config.cta.label}</Text>
-          <Ionicons name="arrow-forward" size={13} color={colors.text.secondary.light} />
-        </Pressable>
-      ) : null}
+      <Text style={styles.emptyTitle}>{title}</Text>
+      <Text style={styles.emptyDescription}>{description}</Text>
     </View>
   )
 }
@@ -85,64 +35,132 @@ export default function PropostasScreen() {
   const [activeTab, setActiveTab] = useState<Tab>('PENDING')
   const router = useRouter()
 
-  const pendingQuery = useMyCreatorPendingContractRequestsQuery()
-  const acceptedQuery = useMyCreatorContractRequestsQuery('ACCEPTED', activeTab === 'ACCEPTED')
-  const awaitingConfirmationQuery = useMyCreatorContractRequestsQuery(
-    'AWAITING_COMPLETION_CONFIRMATION',
-    activeTab === 'ACCEPTED',
-  )
-  const disputeQuery = useMyCreatorContractRequestsQuery(
-    'COMPLETION_DISPUTE',
-    activeTab === 'ACCEPTED',
-  )
-  const completedQuery = useMyCreatorContractRequestsQuery('COMPLETED', activeTab === 'FINALIZED')
-  const rejectedQuery = useMyCreatorContractRequestsQuery('REJECTED', activeTab === 'FINALIZED')
-  const cancelledQuery = useMyCreatorContractRequestsQuery('CANCELLED', activeTab === 'FINALIZED')
+  const hubQuery = useCreatorOffersHubQuery()
+  const hub = hubQuery.data
 
-  const acceptedItems = useMemo(() => {
-    const accepted = acceptedQuery.data ?? []
-    const awaitingConfirmation = awaitingConfirmationQuery.data ?? []
-    const disputes = disputeQuery.data ?? []
-    return dedupeById([...awaitingConfirmation, ...disputes, ...accepted]).sort(sortByStartsAtDesc)
-  }, [acceptedQuery.data, awaitingConfirmationQuery.data, disputeQuery.data])
+  function handleAccept(_id: string) {
+    // mutation is handled inside CreatorHubCard — hub invalidation fires automatically
+  }
 
-  const finalizedItems = useMemo(() => {
-    const completed = completedQuery.data ?? []
-    const rejected = rejectedQuery.data ?? []
-    const cancelled = cancelledQuery.data ?? []
-    return dedupeById([...completed, ...rejected, ...cancelled]).sort(sortByStartsAtDesc)
-  }, [completedQuery.data, rejectedQuery.data, cancelledQuery.data])
-
-  const activeItems: ContractRequestItem[] = (() => {
-    if (activeTab === 'PENDING') return pendingQuery.data ?? []
-    if (activeTab === 'ACCEPTED') return acceptedItems
-    return finalizedItems
-  })()
-
-  const isLoading = (() => {
-    if (activeTab === 'PENDING') return pendingQuery.isLoading
-    if (activeTab === 'ACCEPTED')
-      return (
-        acceptedQuery.isLoading || awaitingConfirmationQuery.isLoading || disputeQuery.isLoading
-      )
-    return completedQuery.isLoading || rejectedQuery.isLoading || cancelledQuery.isLoading
-  })()
+  function handleReject(id: string) {
+    router.push(`/(creator)/propostas/${id}` as never)
+  }
 
   const tabCounts: Record<Tab, number | null> = {
-    PENDING: pendingQuery.data?.length ?? null,
-    ACCEPTED: acceptedQuery.data?.length ?? null,
-    FINALIZED:
-      completedQuery.data != null || rejectedQuery.data != null || cancelledQuery.data != null
-        ? finalizedItems.length
-        : null,
+    PENDING: hub
+      ? hub.summary.pendingInvitesCount + hub.summary.pendingApplicationsCount
+      : null,
+    ACCEPTED: hub?.summary.inProgressCount ?? null,
+    FINALIZED: hub
+      ? hub.finalized.completed.length +
+        hub.finalized.rejected.length +
+        hub.finalized.cancelled.length +
+        hub.finalized.expired.length
+      : null,
   }
 
-  function handleCardPress(item: ContractRequestItem) {
-    router.push(`/(creator)/propostas/${item.id}` as never)
-  }
+  const finalizedItems: CreatorHubItem[] = hub
+    ? [
+        ...hub.finalized.completed,
+        ...hub.finalized.rejected,
+        ...hub.finalized.cancelled,
+        ...hub.finalized.expired,
+      ]
+    : []
 
-  function handleCtaPress(route: string) {
-    router.push(route as never)
+  const isLoading = hubQuery.isLoading && !hub
+  const isRefreshing = hubQuery.isRefetching
+
+  const renderInProgressItem = useCallback(
+    ({ item }: { item: CreatorHubItem }) => <CreatorHubCard item={item} />,
+    [],
+  )
+
+  const renderFinalizedItem = useCallback(
+    ({ item }: { item: CreatorHubItem }) => <CreatorHubCard item={item} />,
+    [],
+  )
+
+  function renderContent() {
+    if (isLoading) return <ProposalSkeleton />
+
+    if (!hub) return null
+
+    if (activeTab === 'PENDING') {
+      return (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => void hubQuery.refetch()}
+              tintColor={colors.primary}
+            />
+          }
+        >
+          <PendingTabContent
+            invites={hub.pending.invites}
+            applications={hub.pending.applications}
+            onAccept={handleAccept}
+            onReject={handleReject}
+          />
+        </ScrollView>
+      )
+    }
+
+    if (activeTab === 'ACCEPTED') {
+      if (hub.inProgress.length === 0) {
+        return (
+          <EmptyTab
+            title="Nenhum trabalho em andamento"
+            description="Quando você aceitar uma proposta, ela aparecerá aqui."
+          />
+        )
+      }
+      return (
+        <FlatList
+          data={hub.inProgress}
+          keyExtractor={(item) => item.id}
+          renderItem={renderInProgressItem}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={() => void hubQuery.refetch()}
+              tintColor={colors.primary}
+            />
+          }
+        />
+      )
+    }
+
+    // FINALIZED
+    if (finalizedItems.length === 0) {
+      return (
+        <EmptyTab
+          title="Nenhuma oferta finalizada"
+          description="Propostas concluídas, recusadas ou canceladas aparecerão aqui."
+        />
+      )
+    }
+    return (
+      <FlatList
+        data={finalizedItems}
+        keyExtractor={(item) => item.id}
+        renderItem={renderFinalizedItem}
+        contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={() => void hubQuery.refetch()}
+            tintColor={colors.primary}
+          />
+        }
+      />
+    )
   }
 
   return (
@@ -170,28 +188,7 @@ export default function PropostasScreen() {
         })}
       </View>
 
-      {isLoading ? (
-        <ProposalSkeleton />
-      ) : activeItems.length === 0 ? (
-        <EmptyState
-          config={EMPTY_STATE[activeTab]}
-          onCtaPress={
-            EMPTY_STATE[activeTab].cta
-              ? () => handleCtaPress(EMPTY_STATE[activeTab].cta!.route)
-              : undefined
-          }
-        />
-      ) : (
-        <FlatList
-          data={activeItems}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => (
-            <ProposalCard item={item} onPress={() => handleCardPress(item)} />
-          )}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {renderContent()}
     </SafeAreaView>
   )
 }
@@ -224,8 +221,12 @@ const styles = StyleSheet.create({
   },
   tabItemActive: {
     backgroundColor: colors.surface.light,
-    boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-  } as object,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 2,
+    elevation: 1,
+  },
   tabLabel: {
     fontSize: 12,
     fontWeight: '600',
@@ -243,78 +244,34 @@ const styles = StyleSheet.create({
   tabCountActive: {
     color: colors.text.primary.light,
   },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
+  },
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 32,
     gap: 12,
   },
-
-  // Empty state
   emptyContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
     paddingBottom: 80,
-    gap: 0,
-  },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#f6f5f8',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  emptyBadge: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#ef4444',
-    borderWidth: 2,
-    borderColor: colors.surface.light,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyBadgeText: {
-    fontSize: 10,
-    fontWeight: '900',
-    color: '#fff',
-    lineHeight: 12,
+    gap: 8,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.text.primary.light,
     textAlign: 'center',
-    letterSpacing: -0.3,
-    marginBottom: 8,
+    letterSpacing: -0.2,
   },
   emptyDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: colors.text.secondary.light,
     textAlign: 'center',
     lineHeight: 20,
-    marginBottom: 20,
-  },
-  emptyCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surface.light,
-    borderWidth: 1,
-    borderColor: colors.border.light,
-    borderRadius: 100,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  emptyCtaText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.text.secondary.light,
   },
 })

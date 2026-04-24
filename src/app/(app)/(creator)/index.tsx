@@ -6,17 +6,16 @@ import { creatorDashboardKeys, creatorPayoutKeys, chatKeys } from '@/lib/query-k
 import {
   fetchCreatorDashboardSummary,
   fetchCreatorPayouts,
-  fetchCreatorUpcoming,
   fetchConversations,
 } from '@/modules/creator-home/service'
 import {
   adaptCreatorKpis,
-  adaptWorkInvites,
-  adaptUpcoming,
+  adaptHubInvites,
+  adaptHubUpcoming,
   deriveUnreadCount,
 } from '@/modules/creator-home/adapters'
 import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
-import { useMyCreatorPendingContractRequestsQuery } from '@/modules/contract-requests/queries'
+import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
 import { colors } from '@/theme/colors'
 import { CreatorKpiSection } from './_home/CreatorKpiSection'
@@ -28,9 +27,11 @@ import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportuni
 export default function HomeScreen() {
   const router = useRouter()
   const { user } = useSession()
-  const pendingInvitesQuery = useMyCreatorPendingContractRequestsQuery()
 
-  const [summaryQuery, payoutsQuery, upcomingQuery, conversationsQuery] = useQueries({
+  const hubQuery = useCreatorOffersHubQuery()
+  const hub = hubQuery.data
+
+  const [summaryQuery, payoutsQuery, conversationsQuery] = useQueries({
     queries: [
       {
         queryKey: creatorDashboardKeys.summary(),
@@ -43,11 +44,6 @@ export default function HomeScreen() {
         staleTime: 60_000,
       },
       {
-        queryKey: creatorDashboardKeys.upcoming(),
-        queryFn: fetchCreatorUpcoming,
-        staleTime: 60_000,
-      },
-      {
         queryKey: chatKeys.conversations(),
         queryFn: fetchConversations,
         staleTime: 30_000,
@@ -56,32 +52,39 @@ export default function HomeScreen() {
   })
 
   const isRefreshing =
+    hubQuery.isRefetching ||
     summaryQuery.isRefetching ||
     payoutsQuery.isRefetching ||
-    pendingInvitesQuery.isRefetching ||
-    upcomingQuery.isRefetching ||
     conversationsQuery.isRefetching
 
   function onRefresh() {
+    void hubQuery.refetch()
     void summaryQuery.refetch()
     void payoutsQuery.refetch()
-    void pendingInvitesQuery.refetch()
-    void upcomingQuery.refetch()
     void conversationsQuery.refetch()
   }
 
-  const hasKpiData = Boolean(summaryQuery.data && payoutsQuery.data)
-  const isKpiLoading = !hasKpiData && (summaryQuery.isLoading || payoutsQuery.isLoading)
+  const now = new Date()
+
+  const hasKpiData = Boolean(hub && payoutsQuery.data)
+  const isKpiLoading = !hasKpiData && (hubQuery.isLoading || payoutsQuery.isLoading)
   const kpiError =
-    !hasKpiData && (summaryQuery.error || payoutsQuery.error)
+    !hasKpiData && (hubQuery.error || payoutsQuery.error)
       ? 'Não foi possível carregar o resumo.'
       : null
   const kpis =
-    summaryQuery.data && payoutsQuery.data
-      ? adaptCreatorKpis(summaryQuery.data, payoutsQuery.data)
+    hub && payoutsQuery.data
+      ? adaptCreatorKpis(
+          summaryQuery.data?.averageRating ?? null,
+          hub.summary.inProgressCount,
+          hub.summary.pendingInvitesCount,
+          payoutsQuery.data,
+          now,
+        )
       : []
-  const invites = adaptWorkInvites(pendingInvitesQuery.data ?? [])
-  const upcoming = adaptUpcoming(upcomingQuery.data ?? [])
+
+  const invites = hub ? adaptHubInvites(hub.pending.invites) : []
+  const upcoming = hub ? adaptHubUpcoming(hub.inProgress, now) : []
   const unreadCount = deriveUnreadCount(conversationsQuery.data ?? [])
 
   return (
@@ -109,16 +112,14 @@ export default function HomeScreen() {
 
         <PendingInvitesPreviewSection
           items={invites}
-          isLoading={pendingInvitesQuery.isLoading}
-          error={
-            pendingInvitesQuery.error ? 'Não foi possível carregar os convites de trabalho.' : null
-          }
+          isLoading={hubQuery.isLoading && !hub}
+          error={hubQuery.error ? 'Não foi possível carregar os convites de trabalho.' : null}
         />
 
         <UpcomingPreviewSection
           items={upcoming}
-          isLoading={upcomingQuery.isLoading}
-          error={upcomingQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
+          isLoading={hubQuery.isLoading && !hub}
+          error={hubQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
         />
 
         <MessagesShortcutCard unreadCount={unreadCount} isLoading={conversationsQuery.isLoading} />

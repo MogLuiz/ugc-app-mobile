@@ -33,8 +33,11 @@ export const opportunityKeys = {
 export const creatorDashboardKeys = {
   all: ['creator-dashboard'] as const,
   summary: () => [...creatorDashboardKeys.all, 'summary'] as const,
-  invites: () => [...creatorDashboardKeys.all, 'invites'] as const,
-  upcoming: () => [...creatorDashboardKeys.all, 'upcoming'] as const,
+}
+
+export const creatorHubKeys = {
+  all: ['creator-hub'] as const,
+  hub: () => [...creatorHubKeys.all, 'hub'] as const,
 }
 
 export const creatorPayoutKeys = {

@@ -5,6 +5,12 @@ import type {
   CreateReviewPayload,
   ReviewItem,
 } from './types'
+import type { CreatorOffersHubResponse } from './creator-hub.types'
+
+export async function getCreatorOffersHub(): Promise<CreatorOffersHubResponse> {
+  const { data } = await api.get<CreatorOffersHubResponse>('/creator/offers/hub')
+  return data
+}
 
 export async function getMyCreatorPendingContractRequests(): Promise<ContractRequestItem[]> {
   const { data } = await api.get<ContractRequestItem[]>('/contract-requests/my-creator/pending')

@@ -1,51 +1,46 @@
-import { formatAmount, formatDurationMinutes, formatShortDate } from '@/lib/formatters'
-import type { ContractRequestItem } from '@/modules/contract-requests/types'
+import { formatAmount, formatShortDate } from '@/lib/formatters'
+import type { CreatorHubItem } from '@/modules/contract-requests/creator-hub.types'
 import type {
   ConversationSummaryItem,
-  CreatorDashboardSummaryApi,
-  CreatorInviteApi,
   CreatorKpiCardVm,
   CreatorPayoutApi,
-  CreatorUpcomingApi,
-  InvitePreviewVm,
   UpcomingPreviewVm,
   WorkInvitePreviewVm,
 } from './types'
 
 export function adaptCreatorKpis(
-  summary: CreatorDashboardSummaryApi,
+  averageRating: number | null,
+  inProgressCount: number,
+  pendingInvitesCount: number,
   payouts: CreatorPayoutApi[],
   now = new Date(),
 ): CreatorKpiCardVm[] {
   const monthlyEarningsCents = payouts.reduce((sum, payout) => {
     if (payout.status !== 'paid' || !payout.paidAt) return sum
-
     const paidAt = new Date(payout.paidAt)
     if (Number.isNaN(paidAt.getTime())) return sum
-
     if (paidAt.getMonth() !== now.getMonth() || paidAt.getFullYear() !== now.getFullYear()) {
       return sum
     }
-
     return sum + payout.amountCents
   }, 0)
 
   const ratingDisplay =
-    summary.averageRating != null && summary.averageRating > 0
-      ? `${summary.averageRating.toFixed(1).replace('.', ',')}/5`
+    averageRating != null && averageRating > 0
+      ? `${averageRating.toFixed(1).replace('.', ',')}/5`
       : '—'
 
   return [
     {
       id: 'confirmed',
       label: 'Trabalhos confirmados',
-      valueDisplay: String(summary.confirmedCampaigns),
+      valueDisplay: String(inProgressCount),
       accent: 'primary',
     },
     {
       id: 'pending',
       label: 'Pendentes',
-      valueDisplay: String(summary.pendingInvites),
+      valueDisplay: String(pendingInvitesCount),
     },
     {
       id: 'earnings',
@@ -60,71 +55,48 @@ export function adaptCreatorKpis(
   ]
 }
 
-export function adaptInvites(rows: CreatorInviteApi[]): InvitePreviewVm[] {
-  return rows.slice(0, 3).map((row) => ({
-    id: row.id,
-    companyName: row.companyName,
-    campaignTitle: row.campaignTitle,
-    dateDisplay: formatShortDate(row.proposedDate),
-    paymentDisplay: formatAmount(row.payment),
-    distanceDisplay:
-      row.distanceKm != null ? `${row.distanceKm.toFixed(1).replace('.', ',')} km` : null,
+export function adaptHubInvites(items: CreatorHubItem[], limit = 2): WorkInvitePreviewVm[] {
+  return items.slice(0, limit).map((item) => ({
+    id: item.id,
+    companyName: item.company.name,
+    title: item.title,
+    dateDisplay: item.startsAt ? formatShortDate(item.startsAt) : 'A combinar',
+    paymentDisplay: formatAmount(item.totalAmount ?? 0),
+    distanceDisplay: null,
   }))
 }
 
-function compareInvitesByStartsAt(a: ContractRequestItem, b: ContractRequestItem): number {
-  const startsAtA = new Date(a.startsAt).getTime()
-  const startsAtB = new Date(b.startsAt).getTime()
-  const normalizedStartsAtA = Number.isNaN(startsAtA) ? Number.POSITIVE_INFINITY : startsAtA
-  const normalizedStartsAtB = Number.isNaN(startsAtB) ? Number.POSITIVE_INFINITY : startsAtB
-
-  if (normalizedStartsAtA !== normalizedStartsAtB) {
-    return normalizedStartsAtA - normalizedStartsAtB
-  }
-
-  return a.id.localeCompare(b.id, 'pt-BR')
-}
-
-function getInviteTitle(row: ContractRequestItem): string {
-  return row.campaignTitle ?? row.jobTypeName ?? 'Convite de trabalho'
-}
-
-function getInvitePaymentValue(row: ContractRequestItem): number {
-  return row.pricing?.totalAmount ?? row.totalAmount ?? row.totalPrice
-}
-
-function getInviteDistanceDisplay(row: ContractRequestItem): string | null {
-  return row.creatorDistance?.formatted ?? null
-}
-
-export function adaptWorkInvites(rows: ContractRequestItem[], limit = 2): WorkInvitePreviewVm[] {
-  return [...rows]
-    .sort(compareInvitesByStartsAt)
-    .map((row) => ({
-      id: row.id,
-      companyName: row.companyName ?? 'Empresa',
-      title: getInviteTitle(row),
-      dateDisplay: formatShortDate(row.startsAt),
-      paymentDisplay: formatAmount(getInvitePaymentValue(row)),
-      distanceDisplay: getInviteDistanceDisplay(row),
-    }))
+export function adaptHubUpcoming(
+  items: CreatorHubItem[],
+  now: Date,
+  limit = 3,
+): UpcomingPreviewVm[] {
+  return items
+    .filter((item) => item.startsAt != null)
+    .sort((a, b) => new Date(a.startsAt!).getTime() - new Date(b.startsAt!).getTime())
     .slice(0, limit)
-}
-
-export function adaptUpcoming(rows: CreatorUpcomingApi[]): UpcomingPreviewVm[] {
-  return rows.slice(0, 3).map((row) => {
-    const d = new Date(row.date)
-    return {
-      id: row.id,
-      campaignName: row.campaignName,
-      companyName: row.companyName,
-      dateDisplay: formatShortDate(row.date),
-      timeDisplay: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      locationDisplay: row.location,
-      durationDisplay: formatDurationMinutes(row.duration),
-      statusBadge: row.status,
-    }
-  })
+    .map((item) => {
+      const d = new Date(item.startsAt!)
+      const statusBadge =
+        item.displayStatus === 'AWAITING_CONFIRMATION'
+          ? 'Concluída'
+          : item.displayStatus === 'IN_DISPUTE'
+            ? 'Pendente'
+            : 'Confirmada'
+      return {
+        id: item.id,
+        campaignName: item.title,
+        companyName: item.company.name,
+        dateDisplay: formatShortDate(item.startsAt!),
+        timeDisplay: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        locationDisplay: item.locationDisplay,
+        durationDisplay: '',
+        statusBadge,
+        primaryAction:
+          item.displayStatus === 'AWAITING_CONFIRMATION' ? 'CONFIRM_OR_DISPUTE' : 'VIEW',
+        href: `/(creator)/propostas/${item.id}`,
+      }
+    })
 }
 
 export function deriveUnreadCount(conversations: ConversationSummaryItem[]): number {

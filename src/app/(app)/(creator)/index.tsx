@@ -23,6 +23,7 @@ import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
 import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSection'
 import { MessagesShortcutCard } from './_home/MessagesShortcutCard'
 import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportunitiesPreviewSection'
+import { PendingReviewsPreviewSection } from './_home/PendingReviewsPreviewSection'
 
 export default function HomeScreen() {
   const router = useRouter()
@@ -86,6 +87,11 @@ export default function HomeScreen() {
   const invites = hub ? adaptHubInvites(hub.pending.invites) : []
   const upcoming = hub ? adaptHubUpcoming(hub.inProgress, now) : []
   const unreadCount = deriveUnreadCount(conversationsQuery.data ?? [])
+  const allPendingReviews = hub
+    ? hub.finalized.completed.filter((c) => c.myReviewPending === true)
+    : []
+  const pendingReviews = allPendingReviews.slice(0, 2)
+  const hasPendingReviewsOverflow = allPendingReviews.length > 2
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -114,6 +120,11 @@ export default function HomeScreen() {
           items={invites}
           isLoading={hubQuery.isLoading && !hub}
           error={hubQuery.error ? 'Não foi possível carregar os convites de trabalho.' : null}
+        />
+
+        <PendingReviewsPreviewSection
+          items={pendingReviews}
+          hasOverflow={hasPendingReviewsOverflow}
         />
 
         <UpcomingPreviewSection

@@ -14,7 +14,9 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { Href } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { useQueryClient } from '@tanstack/react-query'
 import { colors } from '@/theme/colors'
+import { creatorHubKeys } from '@/lib/query-keys'
 import {
   useAcceptContractRequestMutation,
   useCancelContractRequestMutation,
@@ -40,6 +42,7 @@ export default function ProposalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const queryClient = useQueryClient()
 
   const { data: item, isLoading, isError, refetch } = useContractRequestDetailQuery(id)
   const reviewsQuery = useContractReviewsQuery(id, item?.status === 'COMPLETED')
@@ -168,6 +171,7 @@ export default function ProposalDetailScreen() {
       {
         onSuccess: () => {
           setReviewSubmitted(true)
+          void queryClient.invalidateQueries({ queryKey: creatorHubKeys.hub() })
           Alert.alert('Obrigado!', 'Sua avaliação foi enviada.')
         },
         onError: (err) =>

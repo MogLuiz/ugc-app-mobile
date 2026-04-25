@@ -25,6 +25,9 @@ import {
   useDeletePortfolioMediaMutation,
 } from '@/modules/creator-profile-edit/mutations'
 import { validatePortfolioAsset } from '@/modules/creator-profile-edit/types'
+import { useCreatorAvailabilityQuery, useReplaceAvailabilityMutation } from '@/modules/creator-calendar/queries'
+import { mapAvailabilityDays } from '@/modules/creator-calendar/calendar-mappers'
+import type { AvailabilityDay } from '@/modules/creator-calendar/types'
 import { ProfileSkeleton } from './_components/ProfileSkeleton'
 import { ProfileAvatarEditor } from './_components/ProfileAvatarEditor'
 import { ProfileFormSection } from './_components/ProfileFormSection'
@@ -32,11 +35,14 @@ import { ProfileSocialsSection } from './_components/ProfileSocialsSection'
 import { ProfilePortfolioEdit } from './_components/ProfilePortfolioEdit'
 import { ProfileProgressBar } from './_components/ProfileProgressBar'
 import { ProfileAddressSection } from './_components/ProfileAddressSection'
+import { ProfileAvailabilitySection } from './_components/ProfileAvailabilitySection'
 
 export default function PerfilScreen() {
   const { user } = useSession()
   const profileQuery = useMyCreatorProfileEditQuery(user?.id ?? '')
+  const availabilityQuery = useCreatorAvailabilityQuery()
 
+  // Profile fields
   const [name, setName] = useState('')
   const [bio, setBio] = useState('')
   const [phone, setPhone] = useState('')
@@ -48,11 +54,16 @@ export default function PerfilScreen() {
   const [instagram, setInstagram] = useState('')
   const [tiktok, setTiktok] = useState('')
 
+  // Availability state
+  const [availabilityDays, setAvailabilityDays] = useState<AvailabilityDay[]>([])
+  const [isAvailabilityDirty, setIsAvailabilityDirty] = useState(false)
+
   const updateProfileMutation = useUpdateProfileMutation()
   const updateCreatorMutation = useUpdateCreatorProfileMutation()
   const uploadAvatarMutation = useUploadAvatarMutation()
   const uploadPortfolioMutation = useUploadPortfolioMediaMutation()
   const deletePortfolioMutation = useDeletePortfolioMediaMutation()
+  const replaceAvailabilityMutation = useReplaceAvailabilityMutation()
 
   const profile = profileQuery.data
 
@@ -70,6 +81,12 @@ export default function PerfilScreen() {
     setTiktok(profile.socials.tiktokUsername ?? '')
   }, [profile])
 
+  // Always initialize 7 days — whether data is loaded, undefined, or empty
+  useEffect(() => {
+    if (isAvailabilityDirty) return
+    setAvailabilityDays(mapAvailabilityDays(availabilityQuery.data))
+  }, [availabilityQuery.data, isAvailabilityDirty])
+
   const isProfileDirty = profile
     ? name !== (profile.name ?? '') ||
       bio !== (profile.bio ?? '') ||
@@ -86,13 +103,53 @@ export default function PerfilScreen() {
       tiktok !== (profile.socials.tiktokUsername ?? '')
     : false
 
-  const isDirty = isProfileDirty || isCreatorDirty
-  const isSaving = updateProfileMutation.isPending || updateCreatorMutation.isPending
+  const isDirty = isProfileDirty || isCreatorDirty || isAvailabilityDirty
+  const isSaving =
+    updateProfileMutation.isPending ||
+    updateCreatorMutation.isPending ||
+    replaceAvailabilityMutation.isPending
+
+  function updateAvailabilityDay(
+    id: string,
+    field: 'enabled' | 'start' | 'end',
+    value: boolean | string,
+  ) {
+    setIsAvailabilityDirty(true)
+    setAvailabilityDays((days) =>
+      days.map((d) => (d.id === id ? { ...d, [field]: value } : d)),
+    )
+  }
+
+  function syncWeekdays() {
+    const source = availabilityDays.find((d) => d.enabled)
+    if (!source) return
+    setIsAvailabilityDirty(true)
+    setAvailabilityDays((days) =>
+      days.map((d) => (d.enabled ? { ...d, start: source.start, end: source.end } : d)),
+    )
+  }
 
   async function handleSave() {
     if (!isDirty || isSaving) return
 
-    const saves: Promise<void>[] = []
+    // Validate availability only if the user changed it
+    if (isAvailabilityDirty) {
+      const invalidDay = availabilityDays.find((d) => {
+        if (!d.enabled) return false
+        if (!d.start || !d.end) return true
+        return d.start >= d.end
+      })
+      if (invalidDay) {
+        Alert.alert(
+          'Horário inválido',
+          'O horário inicial deve ser menor que o horário final.',
+          [{ text: 'OK' }],
+        )
+        return
+      }
+    }
+
+    const saves: Promise<unknown>[] = []
 
     if (isProfileDirty) {
       saves.push(
@@ -118,8 +175,22 @@ export default function PerfilScreen() {
       )
     }
 
+    if (isAvailabilityDirty) {
+      saves.push(
+        replaceAvailabilityMutation.mutateAsync({
+          days: availabilityDays.map((d) => ({
+            dayOfWeek: d.dayOfWeek,
+            isActive: d.enabled,
+            startTime: d.enabled ? d.start : null,
+            endTime: d.enabled ? d.end : null,
+          })),
+        }),
+      )
+    }
+
     try {
       await Promise.all(saves)
+      if (isAvailabilityDirty) setIsAvailabilityDirty(false)
     } catch (error) {
       Alert.alert(
         'Erro ao salvar',
@@ -216,7 +287,7 @@ export default function PerfilScreen() {
   if (profileQuery.isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.headerWrapper}>
+        <View style={styles.headerInline}>
           <AppScreenHeader title="Meu perfil" />
         </View>
         <ProfileSkeleton />
@@ -227,7 +298,7 @@ export default function PerfilScreen() {
   if (profileQuery.isError || !profile) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.headerWrapper}>
+        <View style={styles.headerInline}>
           <AppScreenHeader title="Meu perfil" />
         </View>
         <View style={styles.errorState}>
@@ -249,10 +320,6 @@ export default function PerfilScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.headerWrapper}>
-        <AppScreenHeader title="Meu perfil" />
-      </View>
-
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -269,6 +336,8 @@ export default function PerfilScreen() {
           }
           contentContainerStyle={styles.scrollContent}
         >
+          <AppScreenHeader title="Meu perfil" />
+
           <ProfileProgressBar
             avatarUrl={profile.avatarUrl}
             name={name}
@@ -324,6 +393,14 @@ export default function PerfilScreen() {
             onRemove={handleRemovePortfolioMedia}
           />
 
+          <ProfileAvailabilitySection
+            days={availabilityDays}
+            onUpdateDay={updateAvailabilityDay}
+            isLoading={availabilityQuery.isLoading}
+            isError={availabilityQuery.isError}
+            onRetry={() => void availabilityQuery.refetch()}
+          />
+
           <Pressable
             style={[styles.saveButton, (!isDirty || isSaving) && styles.saveButtonDisabled]}
             onPress={handleSave}
@@ -347,7 +424,7 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  headerWrapper: {
+  headerInline: {
     paddingHorizontal: theme.spacing.s5,
   },
   scrollContent: {

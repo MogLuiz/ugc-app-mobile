@@ -50,3 +50,8 @@ export const calendarKeys = {
   availability: () => [...calendarKeys.all, 'availability'] as const,
   range: (start: string, end: string) => [...calendarKeys.all, 'range', start, end] as const,
 }
+
+export const creatorProfileKeys = {
+  all: ['creator-profile'] as const,
+  myEdit: (userId: string) => [...creatorProfileKeys.all, 'my-edit', userId] as const,
+}

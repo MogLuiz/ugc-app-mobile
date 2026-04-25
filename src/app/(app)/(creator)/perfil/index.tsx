@@ -1,95 +1,404 @@
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
-import { useState } from 'react'
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
+import { useEffect, useState } from 'react'
+import * as ImagePicker from 'expo-image-picker'
 import { useSession } from '@/hooks/useSession'
+import { AppScreenHeader } from '@/components/AppScreenHeader'
 import { colors } from '@/theme/colors'
+import theme from '@/theme/theme'
+import { useMyCreatorProfileEditQuery } from '@/modules/creator-profile/queries'
+import {
+  useUpdateProfileMutation,
+  useUpdateCreatorProfileMutation,
+  useUploadAvatarMutation,
+  useUploadPortfolioMediaMutation,
+  useDeletePortfolioMediaMutation,
+} from '@/modules/creator-profile-edit/mutations'
+import { validatePortfolioAsset } from '@/modules/creator-profile-edit/types'
+import { ProfileSkeleton } from './_components/ProfileSkeleton'
+import { ProfileAvatarEditor } from './_components/ProfileAvatarEditor'
+import { ProfileFormSection } from './_components/ProfileFormSection'
+import { ProfileSocialsSection } from './_components/ProfileSocialsSection'
+import { ProfilePortfolioEdit } from './_components/ProfilePortfolioEdit'
+import { ProfileProgressBar } from './_components/ProfileProgressBar'
+import { ProfileAddressSection } from './_components/ProfileAddressSection'
 
 export default function PerfilScreen() {
-  const { user, signOut } = useSession()
-  const [loading, setLoading] = useState(false)
+  const { user } = useSession()
+  const profileQuery = useMyCreatorProfileEditQuery(user?.id ?? '')
 
-  async function handleSignOut() {
-    Alert.alert('Sair', 'Tem certeza que deseja sair?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Sair',
-        style: 'destructive',
-        onPress: async () => {
-          setLoading(true)
-          try {
-            await signOut()
-          } finally {
-            setLoading(false)
-          }
-        },
-      },
-    ])
+  const [name, setName] = useState('')
+  const [bio, setBio] = useState('')
+  const [phone, setPhone] = useState('')
+  const [street, setStreet] = useState('')
+  const [number, setNumber] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+  const [zipCode, setZipCode] = useState('')
+  const [instagram, setInstagram] = useState('')
+  const [tiktok, setTiktok] = useState('')
+
+  const updateProfileMutation = useUpdateProfileMutation()
+  const updateCreatorMutation = useUpdateCreatorProfileMutation()
+  const uploadAvatarMutation = useUploadAvatarMutation()
+  const uploadPortfolioMutation = useUploadPortfolioMediaMutation()
+  const deletePortfolioMutation = useDeletePortfolioMediaMutation()
+
+  const profile = profileQuery.data
+
+  useEffect(() => {
+    if (!profile) return
+    setName(profile.name ?? '')
+    setBio(profile.bio ?? '')
+    setPhone(profile.phone ?? '')
+    setStreet(profile.location.street ?? '')
+    setNumber(profile.location.number ?? '')
+    setCity(profile.location.city ?? '')
+    setState(profile.location.state ?? '')
+    setZipCode(profile.location.zipCode ?? '')
+    setInstagram(profile.socials.instagramUsername ?? '')
+    setTiktok(profile.socials.tiktokUsername ?? '')
+  }, [profile])
+
+  const isProfileDirty = profile
+    ? name !== (profile.name ?? '') ||
+      bio !== (profile.bio ?? '') ||
+      phone !== (profile.phone ?? '') ||
+      street !== (profile.location.street ?? '') ||
+      number !== (profile.location.number ?? '') ||
+      city !== (profile.location.city ?? '') ||
+      state !== (profile.location.state ?? '') ||
+      zipCode !== (profile.location.zipCode ?? '')
+    : false
+
+  const isCreatorDirty = profile
+    ? instagram !== (profile.socials.instagramUsername ?? '') ||
+      tiktok !== (profile.socials.tiktokUsername ?? '')
+    : false
+
+  const isDirty = isProfileDirty || isCreatorDirty
+  const isSaving = updateProfileMutation.isPending || updateCreatorMutation.isPending
+
+  async function handleSave() {
+    if (!isDirty || isSaving) return
+
+    const saves: Promise<void>[] = []
+
+    if (isProfileDirty) {
+      saves.push(
+        updateProfileMutation.mutateAsync({
+          name: name.trim() || undefined,
+          bio: bio.trim() || undefined,
+          phone: phone.trim() || undefined,
+          addressStreet: street.trim() || undefined,
+          addressNumber: number.trim() || undefined,
+          addressCity: city.trim() || undefined,
+          addressState: state.trim() || undefined,
+          addressZipCode: zipCode.trim() || undefined,
+        }),
+      )
+    }
+
+    if (isCreatorDirty) {
+      saves.push(
+        updateCreatorMutation.mutateAsync({
+          instagramUsername: instagram.trim() || undefined,
+          tiktokUsername: tiktok.trim() || undefined,
+        }),
+      )
+    }
+
+    try {
+      await Promise.all(saves)
+    } catch (error) {
+      Alert.alert(
+        'Erro ao salvar',
+        error instanceof Error ? error.message : 'Não foi possível salvar as alterações.',
+        [{ text: 'OK' }],
+      )
+    }
   }
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Perfil</Text>
-      {user ? (
-        <>
-          <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.email}>{user.email}</Text>
-          <Text style={styles.role}>{user.role === 'creator' ? 'Creator' : 'Empresa'}</Text>
-        </>
-      ) : null}
+  async function handlePickAvatar() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    })
 
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} disabled={loading}>
-        {loading ? (
-          <ActivityIndicator color={colors.error} />
-        ) : (
-          <Text style={styles.signOutText}>Sair</Text>
-        )}
-      </TouchableOpacity>
-    </View>
+    if (result.canceled || !result.assets[0]) return
+
+    const asset = result.assets[0]
+    try {
+      await uploadAvatarMutation.mutateAsync({
+        uri: asset.uri,
+        mimeType: asset.mimeType ?? 'image/jpeg',
+        fileName: asset.fileName ?? 'avatar.jpg',
+      })
+    } catch (error) {
+      Alert.alert(
+        'Erro no upload',
+        error instanceof Error ? error.message : 'Não foi possível atualizar a foto.',
+        [{ text: 'OK' }],
+      )
+    }
+  }
+
+  async function handleAddPortfolioMedia() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: false,
+      quality: 0.9,
+    })
+
+    if (result.canceled || !result.assets[0]) return
+
+    const asset = result.assets[0]
+    const mimeType = asset.mimeType ?? 'image/jpeg'
+    const validationError = validatePortfolioAsset(mimeType, asset.fileSize ?? undefined)
+
+    if (validationError) {
+      Alert.alert('Arquivo inválido', validationError, [{ text: 'OK' }])
+      return
+    }
+
+    try {
+      await uploadPortfolioMutation.mutateAsync({
+        uri: asset.uri,
+        mimeType,
+        fileName: asset.fileName ?? 'media.jpg',
+      })
+    } catch (error) {
+      Alert.alert(
+        'Erro no upload',
+        error instanceof Error ? error.message : 'Não foi possível adicionar a mídia.',
+        [{ text: 'OK' }],
+      )
+    }
+  }
+
+  function handleRemovePortfolioMedia(mediaId: string) {
+    Alert.alert(
+      'Remover mídia',
+      'Tem certeza que deseja remover esta mídia do portfólio?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: () => {
+            deletePortfolioMutation.mutate(mediaId, {
+              onError: (error) => {
+                Alert.alert(
+                  'Erro',
+                  error instanceof Error ? error.message : 'Não foi possível remover a mídia.',
+                  [{ text: 'OK' }],
+                )
+              },
+            })
+          },
+        },
+      ],
+    )
+  }
+
+  if (profileQuery.isLoading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <AppScreenHeader title="Meu perfil" />
+        </View>
+        <ProfileSkeleton />
+      </SafeAreaView>
+    )
+  }
+
+  if (profileQuery.isError || !profile) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.headerWrapper}>
+          <AppScreenHeader title="Meu perfil" />
+        </View>
+        <View style={styles.errorState}>
+          <Text style={styles.errorText}>Não foi possível carregar seu perfil.</Text>
+          <Pressable
+            style={styles.retryButton}
+            onPress={() => void profileQuery.refetch()}
+          >
+            <Text style={styles.retryText}>Tentar novamente</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
+  const removingId = deletePortfolioMutation.isPending
+    ? (deletePortfolioMutation.variables ?? null)
+    : null
+
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.headerWrapper}>
+        <AppScreenHeader title="Meu perfil" />
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={
+            <RefreshControl
+              refreshing={profileQuery.isRefetching}
+              onRefresh={() => void profileQuery.refetch()}
+              tintColor={colors.primary}
+            />
+          }
+          contentContainerStyle={styles.scrollContent}
+        >
+          <ProfileProgressBar
+            avatarUrl={profile.avatarUrl}
+            name={name}
+            bio={bio}
+            phone={phone}
+            city={city}
+            instagram={instagram}
+            tiktok={tiktok}
+            portfolioLength={profile.portfolio.length}
+          />
+
+          <ProfileAvatarEditor
+            avatarUrl={profile.avatarUrl}
+            name={name}
+            isUploading={uploadAvatarMutation.isPending}
+            onPickImage={handlePickAvatar}
+          />
+
+          <ProfileFormSection
+            name={name}
+            onNameChange={setName}
+            bio={bio}
+            onBioChange={setBio}
+            phone={phone}
+            onPhoneChange={setPhone}
+          />
+
+          <ProfileAddressSection
+            zipCode={zipCode}
+            onZipCodeChange={setZipCode}
+            street={street}
+            onStreetChange={setStreet}
+            number={number}
+            onNumberChange={setNumber}
+            city={city}
+            onCityChange={setCity}
+            state={state}
+            onStateChange={setState}
+          />
+
+          <ProfileSocialsSection
+            instagram={instagram}
+            onInstagramChange={setInstagram}
+            tiktok={tiktok}
+            onTiktokChange={setTiktok}
+          />
+
+          <ProfilePortfolioEdit
+            portfolio={profile.portfolio}
+            isUploading={uploadPortfolioMutation.isPending}
+            removingId={removingId}
+            onAdd={handleAddPortfolioMedia}
+            onRemove={handleRemovePortfolioMedia}
+          />
+
+          <Pressable
+            style={[styles.saveButton, (!isDirty || isSaving) && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={!isDirty || isSaving}
+          >
+            <Text style={styles.saveButtonText}>
+              {isSaving ? 'Salvando...' : 'Salvar alterações'}
+            </Text>
+          </Pressable>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  flex: {
+    flex: 1,
+  },
+  headerWrapper: {
+    paddingHorizontal: theme.spacing.s5,
+  },
+  scrollContent: {
+    paddingHorizontal: theme.spacing.s5,
+    paddingBottom: 40,
+    gap: theme.spacing.s4,
+  },
+  errorState: {
+    flex: 1,
     alignItems: 'center',
-    backgroundColor: colors.background.light,
-    paddingHorizontal: 24,
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.s8,
+    gap: theme.spacing.s4,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text.primary.light,
-    marginBottom: 24,
+  errorText: {
+    fontSize: 15,
+    color: theme.colors.textSecondary,
+    textAlign: 'center',
   },
-  name: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: colors.text.primary.light,
-  },
-  email: {
-    fontSize: 14,
-    color: colors.text.secondary.light,
-    marginTop: 4,
-  },
-  role: {
-    fontSize: 12,
-    color: colors.primary,
-    marginTop: 4,
-    textTransform: 'uppercase',
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-  signOutButton: {
-    marginTop: 40,
+  retryButton: {
+    paddingHorizontal: theme.spacing.s6,
+    paddingVertical: theme.spacing.s3,
+    borderRadius: theme.borderRadii.full,
     borderWidth: 1,
-    borderColor: colors.error,
-    borderRadius: 12,
-    paddingHorizontal: 32,
-    paddingVertical: 12,
+    borderColor: colors.primary,
   },
-  signOutText: {
-    color: colors.error,
-    fontSize: 16,
+  retryText: {
+    fontSize: 14,
     fontWeight: '600',
+    color: colors.primary,
+  },
+  saveButton: {
+    backgroundColor: colors.primary,
+    borderRadius: theme.borderRadii.full,
+    paddingVertical: theme.spacing.s4,
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 16,
+    elevation: 6,
+    marginTop: theme.spacing.s2,
+  },
+  saveButtonDisabled: {
+    opacity: 0.45,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#fff',
   },
 })

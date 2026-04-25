@@ -35,6 +35,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     [
+      'expo-image-picker',
+      {
+        photosPermission: 'O app precisa acessar sua galeria para adicionar fotos ao perfil.',
+      },
+    ],
+    [
       'expo-splash-screen',
       {
         image: './assets/images/splash-icon.png',

@@ -378,13 +378,6 @@ export default function PerfilScreen() {
             onStateChange={setState}
           />
 
-          <ProfileSocialsSection
-            instagram={instagram}
-            onInstagramChange={setInstagram}
-            tiktok={tiktok}
-            onTiktokChange={setTiktok}
-          />
-
           <ProfilePortfolioEdit
             portfolio={profile.portfolio}
             isUploading={uploadPortfolioMutation.isPending}
@@ -399,6 +392,13 @@ export default function PerfilScreen() {
             isLoading={availabilityQuery.isLoading}
             isError={availabilityQuery.isError}
             onRetry={() => void availabilityQuery.refetch()}
+          />
+
+          <ProfileSocialsSection
+            instagram={instagram}
+            onInstagramChange={setInstagram}
+            tiktok={tiktok}
+            onTiktokChange={setTiktok}
           />
 
           <Pressable

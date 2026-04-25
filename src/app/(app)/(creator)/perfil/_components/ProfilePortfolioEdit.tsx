@@ -1,12 +1,17 @@
+import { useState } from 'react'
 import {
   ActivityIndicator,
+  Modal,
+  Platform,
   Pressable,
+  SafeAreaView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
 } from 'react-native'
 import { Image } from 'expo-image'
+import { useVideoPlayer, VideoView } from 'expo-video'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/theme/colors'
 import theme from '@/theme/theme'
@@ -15,17 +20,116 @@ import type { CreatorPortfolioItem } from '@/modules/creator-profile/types'
 const SECTION_PADDING = theme.spacing.s5
 const GRID_GAP = 10
 
+// ─── Video Player Modal ───────────────────────────────────────────────────────
+
+function VideoPlayerModal({ uri, onClose }: { uri: string; onClose: () => void }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = false
+    void p.play()
+  })
+
+  return (
+    <Modal
+      visible
+      animationType="fade"
+      statusBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View style={vp.container}>
+        <VideoView
+          player={player}
+          style={vp.video}
+          allowsFullscreen={false}
+          nativeControls
+          contentFit="contain"
+        />
+        <Pressable style={vp.closeButton} onPress={onClose} hitSlop={12}>
+          <View style={vp.closeCircle}>
+            <Ionicons name="close" size={20} color="#fff" />
+          </View>
+        </Pressable>
+      </View>
+    </Modal>
+  )
+}
+
+const vp = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 24,
+    right: 20,
+  },
+  closeCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+})
+
+// ─── Video Thumbnail ─────────────────────────────────────────────────────────
+// Used when the backend doesn't provide a thumbnailUrl for a video.
+// Creates a paused player showing the first frame of the video.
+
+function VideoThumbnailView({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.pause()
+  })
+
+  return (
+    <VideoView
+      player={player}
+      style={StyleSheet.absoluteFill}
+      contentFit="cover"
+      nativeControls={false}
+      allowsFullscreen={false}
+    />
+  )
+}
+
+// ─── Portfolio Item Card ──────────────────────────────────────────────────────
+
 type PortfolioItemCardProps = {
   item: CreatorPortfolioItem
   width: number
   height: number
   isRemoving: boolean
   onRemove: (id: string) => void
+  onPlayVideo: (uri: string) => void
 }
 
-function PortfolioItemCard({ item, width, height, isRemoving, onRemove }: PortfolioItemCardProps) {
+function PortfolioItemCard({
+  item,
+  width,
+  height,
+  isRemoving,
+  onRemove,
+  onPlayVideo,
+}: PortfolioItemCardProps) {
+  const isVideo = item.mediaType === 'video'
+
+  function handlePress() {
+    if (isVideo && item.videoUrl) onPlayVideo(item.videoUrl)
+  }
+
   return (
-    <View style={[styles.gridItem, { width, height }]}>
+    <Pressable
+      style={[styles.gridItem, { width, height }]}
+      onPress={handlePress}
+      disabled={!isVideo || !item.videoUrl}
+    >
+      {/* Thumbnail or placeholder */}
       {item.imageUrl ? (
         <Image
           source={{ uri: item.imageUrl }}
@@ -34,17 +138,31 @@ function PortfolioItemCard({ item, width, height, isRemoving, onRemove }: Portfo
           recyclingKey={item.id}
           style={StyleSheet.absoluteFill}
         />
+      ) : isVideo && item.videoUrl ? (
+        // No thumbnailUrl from backend — render first frame via paused VideoView
+        <VideoThumbnailView uri={item.videoUrl} />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.imageFallback]} />
       )}
 
-      {item.mediaType === 'video' ? (
+      {/* Video overlay: semi-dark scrim + play button */}
+      {isVideo ? (
+        <View style={styles.videoOverlay}>
+          <View style={styles.playCircle}>
+            <Ionicons name="play" size={16} color="#fff" style={styles.playIcon} />
+          </View>
+        </View>
+      ) : null}
+
+      {/* Video badge */}
+      {isVideo ? (
         <View style={styles.videoBadge}>
           <Ionicons name="play" size={9} color="#fff" />
           <Text style={styles.videoBadgeText}>Vídeo</Text>
         </View>
       ) : null}
 
+      {/* Remove / removing state */}
       {isRemoving ? (
         <View style={styles.removingOverlay}>
           <ActivityIndicator color="#fff" size="small" />
@@ -58,18 +176,23 @@ function PortfolioItemCard({ item, width, height, isRemoving, onRemove }: Portfo
           <Ionicons name="close" size={12} color="#fff" />
         </Pressable>
       )}
-    </View>
+    </Pressable>
   )
 }
 
-type AddButtonProps = {
+// ─── Add Button ───────────────────────────────────────────────────────────────
+
+function AddButton({
+  width,
+  height,
+  isUploading,
+  onPress,
+}: {
   width: number
   height: number
   isUploading: boolean
   onPress: () => void
-}
-
-function AddButton({ width, height, isUploading, onPress }: AddButtonProps) {
+}) {
   return (
     <Pressable
       style={[styles.gridItem, styles.addButton, { width, height }]}
@@ -90,6 +213,8 @@ function AddButton({ width, height, isUploading, onPress }: AddButtonProps) {
   )
 }
 
+// ─── Section ──────────────────────────────────────────────────────────────────
+
 type Props = {
   portfolio: CreatorPortfolioItem[]
   isUploading: boolean
@@ -98,9 +223,19 @@ type Props = {
   onRemove: (id: string) => void
 }
 
-export function ProfilePortfolioEdit({ portfolio, isUploading, removingId, onAdd, onRemove }: Props) {
+export function ProfilePortfolioEdit({
+  portfolio,
+  isUploading,
+  removingId,
+  onAdd,
+  onRemove,
+}: Props) {
   const { width: windowWidth } = useWindowDimensions()
-  const itemWidth = Math.floor((windowWidth - SECTION_PADDING * 2 - GRID_GAP - theme.spacing.s5 * 2) / 2)
+  const [activeVideoUri, setActiveVideoUri] = useState<string | null>(null)
+
+  const itemWidth = Math.floor(
+    (windowWidth - SECTION_PADDING * 2 - GRID_GAP - theme.spacing.s5 * 2) / 2,
+  )
   const itemHeight = Math.floor(itemWidth * (4 / 3))
 
   return (
@@ -108,7 +243,9 @@ export function ProfilePortfolioEdit({ portfolio, isUploading, removingId, onAdd
       <View style={styles.header}>
         <Text style={styles.sectionTitle}>Portfólio</Text>
         {portfolio.length > 0 ? (
-          <Text style={styles.count}>{portfolio.length} {portfolio.length === 1 ? 'mídia' : 'mídias'}</Text>
+          <Text style={styles.count}>
+            {portfolio.length} {portfolio.length === 1 ? 'mídia' : 'mídias'}
+          </Text>
         ) : null}
       </View>
 
@@ -131,6 +268,7 @@ export function ProfilePortfolioEdit({ portfolio, isUploading, removingId, onAdd
             height={itemHeight}
             isRemoving={removingId === item.id}
             onRemove={onRemove}
+            onPlayVideo={setActiveVideoUri}
           />
         ))}
         <AddButton
@@ -140,9 +278,15 @@ export function ProfilePortfolioEdit({ portfolio, isUploading, removingId, onAdd
           onPress={onAdd}
         />
       </View>
+
+      {activeVideoUri ? (
+        <VideoPlayerModal uri={activeVideoUri} onClose={() => setActiveVideoUri(null)} />
+      ) : null}
     </View>
   )
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   card: {
@@ -200,6 +344,23 @@ const styles = StyleSheet.create({
   },
   imageFallback: {
     backgroundColor: theme.colors.surfaceAlt,
+  },
+  videoOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  playIcon: {
+    marginLeft: 2, // optical center for play triangle
   },
   videoBadge: {
     position: 'absolute',

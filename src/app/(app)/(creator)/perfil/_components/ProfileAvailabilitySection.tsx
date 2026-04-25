@@ -211,8 +211,14 @@ function AvailabilityTimePickerModal({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={pm.backdrop} onPress={onClose}>
-        <Pressable style={pm.sheet} onPress={() => undefined}>
+      {/*
+        Pattern: overlay (flex:1) → backdropArea (flex:1, dismissible) + sheet (View, not Pressable).
+        Using Pressable as sheet wrapper breaks flex layout for children — the ScrollView
+        with flex:1 collapses because Pressable doesn't propagate height like View does.
+      */}
+      <View style={pm.overlay}>
+        <Pressable style={pm.backdropArea} onPress={onClose} />
+        <View style={pm.sheet}>
           <View style={pm.header}>
             <Text style={pm.title}>{title}</Text>
             <Pressable onPress={onClose} hitSlop={12}>
@@ -221,7 +227,8 @@ function AvailabilityTimePickerModal({
           </View>
           <ScrollView
             ref={scrollRef}
-            style={pm.list}
+            style={pm.scroll}
+            contentContainerStyle={pm.scrollContent}
             showsVerticalScrollIndicator={false}
           >
             {TIME_OPTIONS.map((item) => {
@@ -243,31 +250,36 @@ function AvailabilityTimePickerModal({
               )
             })}
           </ScrollView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </Modal>
   )
 }
 
 const pm = StyleSheet.create({
-  backdrop: {
+  // Full-screen overlay with backdrop color
+  overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
+  // Transparent area above the sheet — tapping dismisses the modal
+  backdropArea: {
+    flex: 1,
+  },
+  // Sheet is a View (not Pressable) so flex layout works correctly for children
   sheet: {
     backgroundColor: theme.colors.surface,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     paddingBottom: Platform.OS === 'ios' ? 34 : 16,
-    maxHeight: '62%',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: theme.spacing.s5,
-    paddingVertical: 14,
+    height: 56,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: theme.colors.borderSubtle,
   },
@@ -276,8 +288,12 @@ const pm = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.textStrong,
   },
-  list: {
-    flex: 1,
+  // Explicit maxHeight ensures the ScrollView renders even without a fixed parent height
+  scroll: {
+    maxHeight: 340,
+  },
+  scrollContent: {
+    paddingBottom: 8,
   },
   option: {
     flexDirection: 'row',

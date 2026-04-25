@@ -20,14 +20,17 @@ const DAY_METADATA: Record<AvailabilityDayOfWeek, { id: string; label: string }>
   SUNDAY:    { id: 'sunday',    label: 'Domingo'       },
 }
 
-// Normalizes "09:00:00" → "09:00", null → fallback
+// Normalizes "09:00:00" → "09:00" and snaps to the 30-minute grid.
+// Any minute value: 0-14 → :00, 15-59 → :30.
 function normalizeTime(time: string | null | undefined, fallback: string): string {
   if (!time) return fallback
   const parts = time.split(':')
-  if (parts.length >= 2) {
-    return `${String(parts[0]).padStart(2, '0')}:${String(parts[1]).padStart(2, '0')}`
-  }
-  return fallback
+  if (parts.length < 2) return fallback
+  const h = parseInt(parts[0], 10)
+  const m = parseInt(parts[1], 10)
+  if (isNaN(h) || isNaN(m) || h < 0 || h > 23) return fallback
+  const snappedM = m >= 15 ? 30 : 0
+  return `${String(h).padStart(2, '0')}:${snappedM === 30 ? '30' : '00'}`
 }
 
 export function mapAvailabilityDays(response?: CreatorAvailabilityResponse): AvailabilityDay[] {

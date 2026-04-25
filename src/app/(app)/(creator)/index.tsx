@@ -1,4 +1,5 @@
-import { RefreshControl, ScrollView, StyleSheet } from 'react-native'
+import { useState } from 'react'
+import { Alert, RefreshControl, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueries } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
@@ -17,6 +18,7 @@ import {
 import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
 import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
+import { UserMenuBottomSheet, type UserMenuAction } from '@/components/UserMenuBottomSheet'
 import { colors } from '@/theme/colors'
 import { CreatorKpiSection } from './_home/CreatorKpiSection'
 import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
@@ -27,7 +29,46 @@ import { PendingReviewsPreviewSection } from './_home/PendingReviewsPreviewSecti
 
 export default function HomeScreen() {
   const router = useRouter()
-  const { user } = useSession()
+  const { user, signOut } = useSession()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const menuActions: UserMenuAction[] = [
+    {
+      label: 'Meu perfil',
+      icon: 'user',
+      onPress: () => {
+        setMenuOpen(false)
+        router.push('/(app)/(creator)/perfil')
+      },
+    },
+    {
+      label: 'Ganhos',
+      icon: 'dollar-sign',
+      onPress: () => {
+        setMenuOpen(false)
+        Alert.alert('Em breve', 'A área de ganhos ainda será liberada.')
+      },
+    },
+    {
+      label: 'Configurações',
+      icon: 'settings',
+      onPress: () => {
+        setMenuOpen(false)
+        Alert.alert('Em breve', 'As configurações ainda serão liberadas.')
+      },
+    },
+    {
+      label: 'Sair',
+      icon: 'log-out',
+      danger: true,
+      onPress: () => {
+        setMenuOpen(false)
+        signOut().catch(() => {
+          Alert.alert('Erro ao sair', 'Não foi possível encerrar sua sessão. Tente novamente.')
+        })
+      },
+    },
+  ]
 
   const hubQuery = useCreatorOffersHubQuery()
   const hub = hubQuery.data
@@ -109,7 +150,7 @@ export default function HomeScreen() {
         <CreatorDashboardHeader
           userName={user?.name}
           avatarUrl={user?.avatarUrl}
-          onPressAvatar={() => router.push('/(creator)/perfil' as never)}
+          onPressAvatar={() => setMenuOpen(true)}
         />
 
         <CreatorKpiSection items={kpis} isLoading={isKpiLoading} error={kpiError} />
@@ -135,6 +176,15 @@ export default function HomeScreen() {
 
         <MessagesShortcutCard unreadCount={unreadCount} isLoading={conversationsQuery.isLoading} />
       </ScrollView>
+
+      <UserMenuBottomSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        userName={user?.name}
+        avatarUrl={user?.avatarUrl}
+        userRole={user?.role}
+        actions={menuActions}
+      />
     </SafeAreaView>
   )
 }

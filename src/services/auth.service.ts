@@ -153,6 +153,20 @@ export const authService = {
     await supabase.auth.signOut().catch(() => { })
   },
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.user?.email) throw new Error('Usuário não autenticado')
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: session.user.email,
+      password: currentPassword,
+    })
+    if (signInError) throw new Error('Senha atual incorreta')
+
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    if (error) throw new Error(error.message)
+  },
+
   async signUp(
     email: string,
     password: string,

@@ -52,7 +52,7 @@ export default function HomeScreen() {
       icon: 'settings',
       onPress: () => {
         setMenuOpen(false)
-        Alert.alert('Em breve', 'As configurações ainda serão liberadas.')
+        router.push('/(app)/configuracoes' as never)
       },
     },
     {

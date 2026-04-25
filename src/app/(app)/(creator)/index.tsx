@@ -3,17 +3,15 @@ import { Alert, RefreshControl, ScrollView, StyleSheet } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueries } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
-import { creatorDashboardKeys, creatorPayoutKeys, chatKeys } from '@/lib/query-keys'
+import { creatorDashboardKeys, creatorPayoutKeys } from '@/lib/query-keys'
 import {
   fetchCreatorDashboardSummary,
   fetchCreatorPayouts,
-  fetchConversations,
 } from '@/modules/creator-home/service'
 import {
   adaptCreatorKpis,
   adaptHubInvites,
   adaptHubUpcoming,
-  deriveUnreadCount,
 } from '@/modules/creator-home/adapters'
 import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
 import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
@@ -23,7 +21,7 @@ import { colors } from '@/theme/colors'
 import { CreatorKpiSection } from './_home/CreatorKpiSection'
 import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
 import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSection'
-import { MessagesShortcutCard } from './_home/MessagesShortcutCard'
+
 import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportunitiesPreviewSection'
 import { PendingReviewsPreviewSection } from './_home/PendingReviewsPreviewSection'
 
@@ -73,7 +71,7 @@ export default function HomeScreen() {
   const hubQuery = useCreatorOffersHubQuery()
   const hub = hubQuery.data
 
-  const [summaryQuery, payoutsQuery, conversationsQuery] = useQueries({
+  const [summaryQuery, payoutsQuery] = useQueries({
     queries: [
       {
         queryKey: creatorDashboardKeys.summary(),
@@ -85,25 +83,16 @@ export default function HomeScreen() {
         queryFn: fetchCreatorPayouts,
         staleTime: 60_000,
       },
-      {
-        queryKey: chatKeys.conversations(),
-        queryFn: fetchConversations,
-        staleTime: 30_000,
-      },
     ],
   })
 
   const isRefreshing =
-    hubQuery.isRefetching ||
-    summaryQuery.isRefetching ||
-    payoutsQuery.isRefetching ||
-    conversationsQuery.isRefetching
+    hubQuery.isRefetching || summaryQuery.isRefetching || payoutsQuery.isRefetching
 
   function onRefresh() {
     void hubQuery.refetch()
     void summaryQuery.refetch()
     void payoutsQuery.refetch()
-    void conversationsQuery.refetch()
   }
 
   const now = new Date()
@@ -127,7 +116,7 @@ export default function HomeScreen() {
 
   const invites = hub ? adaptHubInvites(hub.pending.invites) : []
   const upcoming = hub ? adaptHubUpcoming(hub.inProgress, now) : []
-  const unreadCount = deriveUnreadCount(conversationsQuery.data ?? [])
+
   const allPendingReviews = hub
     ? hub.finalized.completed.filter((c) => c.myReviewPending === true)
     : []
@@ -174,7 +163,6 @@ export default function HomeScreen() {
           error={hubQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
         />
 
-        <MessagesShortcutCard unreadCount={unreadCount} isLoading={conversationsQuery.isLoading} />
       </ScrollView>
 
       <UserMenuBottomSheet

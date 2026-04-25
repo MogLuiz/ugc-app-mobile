@@ -7,16 +7,6 @@ export type ConversationSummaryItem = {
   unreadCount: number
 }
 
-export type CreatorPayoutApi = {
-  id: string
-  amountCents: number
-  currency: string
-  status: 'not_due' | 'pending' | 'scheduled' | 'paid' | 'failed' | 'canceled'
-  paidAt: string | null
-  createdAt: string
-  updatedAt: string
-}
-
 export type CreatorKpiCardVm = {
   id: 'confirmed' | 'pending' | 'earnings' | 'rating'
   label: string

@@ -1,9 +1,9 @@
 import { formatAmount, formatShortDate } from '@/lib/formatters'
 import type { CreatorHubItem } from '@/modules/contract-requests/creator-hub.types'
+import type { CreatorPayout } from '@/modules/creator-payouts/types'
 import type {
   ConversationSummaryItem,
   CreatorKpiCardVm,
-  CreatorPayoutApi,
   UpcomingPreviewVm,
   WorkInvitePreviewVm,
 } from './types'
@@ -12,7 +12,7 @@ export function adaptCreatorKpis(
   averageRating: number | null,
   inProgressCount: number,
   pendingInvitesCount: number,
-  payouts: CreatorPayoutApi[],
+  payouts: CreatorPayout[],
   now = new Date(),
 ): CreatorKpiCardVm[] {
   const monthlyEarningsCents = payouts.reduce((sum, payout) => {

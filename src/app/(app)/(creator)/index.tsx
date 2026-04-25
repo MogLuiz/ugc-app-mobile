@@ -4,10 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useQueries } from '@tanstack/react-query'
 import { useRouter } from 'expo-router'
 import { creatorDashboardKeys, creatorPayoutKeys } from '@/lib/query-keys'
-import {
-  fetchCreatorDashboardSummary,
-  fetchCreatorPayouts,
-} from '@/modules/creator-home/service'
+import { fetchCreatorDashboardSummary } from '@/modules/creator-home/service'
+import { fetchCreatorPayouts } from '@/modules/creator-payouts/service'
 import {
   adaptCreatorKpis,
   adaptHubInvites,
@@ -44,7 +42,7 @@ export default function HomeScreen() {
       icon: 'dollar-sign',
       onPress: () => {
         setMenuOpen(false)
-        Alert.alert('Em breve', 'A área de ganhos ainda será liberada.')
+        router.push('/(app)/(creator)/ganhos' as never)
       },
     },
     {

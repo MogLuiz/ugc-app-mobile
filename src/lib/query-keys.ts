@@ -45,6 +45,11 @@ export const creatorPayoutKeys = {
   list: () => [...creatorPayoutKeys.all, 'list'] as const,
 }
 
+export const payoutSettingsKeys = {
+  all: ['payout-settings'] as const,
+  mine: () => [...payoutSettingsKeys.all, 'mine'] as const,
+}
+
 export const calendarKeys = {
   all: ['creator-calendar'] as const,
   availability: () => [...calendarKeys.all, 'availability'] as const,

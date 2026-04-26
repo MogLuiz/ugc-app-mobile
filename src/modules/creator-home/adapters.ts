@@ -61,7 +61,7 @@ export function adaptHubInvites(items: CreatorHubItem[], limit = 2): WorkInviteP
     companyName: item.company.name,
     title: item.title,
     dateDisplay: item.startsAt ? formatShortDate(item.startsAt) : 'A combinar',
-    paymentDisplay: formatAmount(item.totalAmount ?? 0),
+    paymentDisplay: formatAmount((item.totalAmount ?? 0) / 100),
     distanceDisplay: null,
   }))
 }

@@ -71,7 +71,7 @@ export function sortOpportunities(
 
   switch (sortBy) {
     case 'value':
-      return copy.sort((a, b) => b.offeredAmount - a.offeredAmount)
+      return copy.sort((a, b) => b.creatorNetServiceAmountCents - a.creatorNetServiceAmountCents)
     case 'distance':
       return copy.sort((a, b) => a.distanceKm - b.distanceKm)
     case 'recent':
@@ -117,7 +117,7 @@ export function adaptOpportunityCard(item: OpportunityListItem): OpportunityCard
   return {
     id: item.id,
     title: item.jobType?.name ?? 'Oportunidade',
-    amountDisplay: formatAmount(item.offeredAmount),
+    amountDisplay: formatAmount(item.creatorNetServiceAmountCents / 100),
     description: item.description || 'Sem descrição',
     dateDisplay: formatShortDate(item.startsAt),
     durationDisplay: formatDurationMinutes(item.durationMinutes),

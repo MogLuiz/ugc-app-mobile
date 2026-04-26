@@ -60,7 +60,7 @@ export function CreatorHubCard({
             </Text>
           </View>
           {item.totalAmount != null && (
-            <Text style={styles.amount}>{formatAmount(item.totalAmount)}</Text>
+            <Text style={styles.amount}>{formatAmount(item.totalAmount / 100)}</Text>
           )}
           <Ionicons name="chevron-forward" size={16} color={colors.border.light} />
         </View>

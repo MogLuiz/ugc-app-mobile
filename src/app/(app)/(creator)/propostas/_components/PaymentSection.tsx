@@ -7,15 +7,15 @@ type Props = {
 }
 
 export function PaymentSection({ item }: Props) {
-  const total = item.totalAmount ?? item.totalPrice
-  const hasTransport = (item.transportFee ?? 0) > 0
-  const transportLabel = item.transport?.formatted ?? formatAmount(item.transportFee)
+  const total = item.creatorPayoutAmountCents / 100
+  const hasTransport = (item.transportFeeAmountCents ?? 0) > 0
+  const transportLabel = item.transport?.formatted ?? formatAmount(item.transportFeeAmountCents / 100)
 
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View>
-          <Text style={styles.totalLabel}>PAGAMENTO TOTAL</Text>
+          <Text style={styles.totalLabel}>TOTAL A RECEBER</Text>
           <Text style={styles.totalAmount}>{formatAmount(total)}</Text>
         </View>
         <View style={styles.badge}>
@@ -28,7 +28,7 @@ export function PaymentSection({ item }: Props) {
       <View style={styles.breakdown}>
         <View style={styles.breakdownRow}>
           <Text style={styles.breakdownLabel}>Serviço</Text>
-          <Text style={styles.breakdownValue}>{formatAmount(item.creatorBasePrice)}</Text>
+          <Text style={styles.breakdownValue}>{formatAmount(item.creatorNetServiceAmountCents / 100)}</Text>
         </View>
         {hasTransport ? (
           <View style={styles.breakdownRow}>

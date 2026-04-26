@@ -14,8 +14,8 @@ export type CreatorPayout = {
   createdAt: string
   updatedAt: string
   payment?: {
-    grossAmountCents: number
-    platformFeeCents: number
+    creatorNetServiceAmountCents: number
+    transportFeeAmountCents: number
     contractRequestId: string
     gatewayName: string
   }

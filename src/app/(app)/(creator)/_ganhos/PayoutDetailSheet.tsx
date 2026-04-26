@@ -114,14 +114,15 @@ function PayoutDetailContent({
         {payment ? (
           <View style={styles.breakdownRows}>
             <BreakdownRow
-              label="Valor do contrato"
-              value={formatCurrency(payment.grossAmountCents / 100)}
+              label="Serviço"
+              value={formatCurrency(payment.creatorNetServiceAmountCents / 100)}
             />
-            <BreakdownRow
-              label="Taxa da plataforma"
-              value={`− ${formatCurrency(payment.platformFeeCents / 100)}`}
-              valueStyle={styles.valueMuted}
-            />
+            {payment.transportFeeAmountCents > 0 && (
+              <BreakdownRow
+                label="Transporte"
+                value={formatCurrency(payment.transportFeeAmountCents / 100)}
+              />
+            )}
             <View style={styles.divider} />
             <BreakdownRow
               label="Total a receber"

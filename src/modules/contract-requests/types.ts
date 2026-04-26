@@ -54,10 +54,13 @@ export type ContractRequestItem = {
     formatted: string
     isMinimumApplied: boolean
   }
-  transportFee: number
-  creatorBasePrice: number
-  platformFee: number
-  totalPrice: number
+  serviceGrossAmountCents: number
+  platformFeeBpsSnapshot?: number
+  platformFeeAmountCents?: number
+  creatorNetServiceAmountCents: number
+  transportFeeAmountCents: number
+  creatorPayoutAmountCents: number
+  companyTotalAmountCents: number
   totalAmount: number
   transportPricePerKmUsed: number
   transportMinimumFeeUsed: number

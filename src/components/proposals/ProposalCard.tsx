@@ -27,7 +27,7 @@ function getTimeLabel(startsAt: string): string {
 
 export function ProposalCard({ item, onPress }: Props) {
   const isPending = item.status === 'PENDING_ACCEPTANCE'
-  const amount = item.pricing?.totalAmount ?? item.totalAmount ?? item.totalPrice
+  const amount = item.creatorPayoutAmountCents / 100
   const effectiveExpiresAt = isPending ? getEffectiveExpiresAt(item) : null
   const locationLine = getLocationLine(item)
 

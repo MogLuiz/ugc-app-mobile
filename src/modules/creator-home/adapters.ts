@@ -1,4 +1,4 @@
-import { formatAmount, formatShortDate } from '@/lib/formatters'
+import { formatCurrency, formatShortDate } from '@/lib/formatters'
 import type { CreatorHubItem } from '@/modules/contract-requests/creator-hub.types'
 import type { CreatorPayout } from '@/modules/creator-payouts/types'
 import type {
@@ -45,7 +45,7 @@ export function adaptCreatorKpis(
     {
       id: 'earnings',
       label: 'Ganhos do mês',
-      valueDisplay: formatAmount(monthlyEarningsCents / 100),
+      valueDisplay: formatCurrency(monthlyEarningsCents / 100),
     },
     {
       id: 'rating',
@@ -61,7 +61,7 @@ export function adaptHubInvites(items: CreatorHubItem[], limit = 2): WorkInviteP
     companyName: item.company.name,
     title: item.title,
     dateDisplay: item.startsAt ? formatShortDate(item.startsAt) : 'A combinar',
-    paymentDisplay: formatAmount((item.totalAmount ?? 0) / 100),
+    paymentDisplay: formatCurrency((item.totalAmount ?? 0) / 100),
     distanceDisplay: null,
   }))
 }

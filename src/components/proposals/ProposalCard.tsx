@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { formatAmount, formatDurationMinutes, formatShortDate } from '@/lib/formatters'
+import { formatCurrency, formatDurationMinutes, formatShortDate } from '@/lib/formatters'
 import { colors } from '@/theme/colors'
 import type { ContractRequestItem } from '@/modules/contract-requests/types'
 import { getEffectiveExpiresAt } from '@/modules/contract-requests/utils'
@@ -41,7 +41,7 @@ export function ProposalCard({ item, onPress }: Props) {
         <Text style={styles.companyName} numberOfLines={2}>
           {item.companyName ?? 'Empresa'}
         </Text>
-        <Text style={styles.amount}>{formatAmount(amount)}</Text>
+        <Text style={styles.amount}>{formatCurrency(amount)}</Text>
       </View>
 
       {/* Seção 2: descrição em caixa cinza */}

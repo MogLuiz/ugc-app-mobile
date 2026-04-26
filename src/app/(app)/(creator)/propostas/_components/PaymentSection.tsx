@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { formatAmount } from '@/lib/formatters'
+import { formatCurrency } from '@/lib/formatters'
 import type { ContractRequestItem } from '@/modules/contract-requests/types'
 
 type Props = {
@@ -9,14 +9,15 @@ type Props = {
 export function PaymentSection({ item }: Props) {
   const total = item.creatorPayoutAmountCents / 100
   const hasTransport = (item.transportFeeAmountCents ?? 0) > 0
-  const transportLabel = item.transport?.formatted ?? formatAmount(item.transportFeeAmountCents / 100)
+  const transportLabel =
+    item.transport?.formatted ?? formatCurrency(item.transportFeeAmountCents / 100)
 
   return (
     <View style={styles.container}>
       <View style={styles.topRow}>
         <View>
           <Text style={styles.totalLabel}>TOTAL A RECEBER</Text>
-          <Text style={styles.totalAmount}>{formatAmount(total)}</Text>
+          <Text style={styles.totalAmount}>{formatCurrency(total)}</Text>
         </View>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>GARANTIDO</Text>
@@ -28,7 +29,9 @@ export function PaymentSection({ item }: Props) {
       <View style={styles.breakdown}>
         <View style={styles.breakdownRow}>
           <Text style={styles.breakdownLabel}>Serviço</Text>
-          <Text style={styles.breakdownValue}>{formatAmount(item.creatorNetServiceAmountCents / 100)}</Text>
+          <Text style={styles.breakdownValue}>
+            {formatCurrency(item.creatorNetServiceAmountCents / 100)}
+          </Text>
         </View>
         {hasTransport ? (
           <View style={styles.breakdownRow}>

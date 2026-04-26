@@ -1,7 +1,7 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
-import { formatAmount, formatOfferExpiry, formatShortDate, getInitials } from '@/lib/formatters'
+import { formatCurrency, formatOfferExpiry, formatShortDate, getInitials } from '@/lib/formatters'
 import {
   useAcceptContractRequestMutation,
   useRejectContractRequestMutation,
@@ -60,7 +60,9 @@ export function CreatorHubCard({
             </Text>
           </View>
           {item.totalAmount != null && (
-            <Text style={styles.amount}>{formatAmount(item.totalAmount / 100)}</Text>
+            <Text style={styles.amount}>
+              {formatCurrency(item.totalAmount / 100)}
+            </Text>
           )}
           <Ionicons name="chevron-forward" size={16} color={colors.border.light} />
         </View>

@@ -1,6 +1,9 @@
 // ─── Currency ─────────────────────────────────────────────────────────────────
 
-/** Ex: 1500 → "R$ 1.500" */
+/**
+ * Moeda BRL sem fração (arredonda para real inteiro).
+ * Para valores com centavos (contratos, payouts, totais), use {@link formatCurrency}.
+ */
 export function formatAmount(value: number): string {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
@@ -10,7 +13,7 @@ export function formatAmount(value: number): string {
   })
 }
 
-/** Ex: 1500.50 → "R$ 1.500,50" (com centavos) */
+/** Valor em reais com centavos (alinhado ao `formatCurrency` do web). */
 export function formatCurrency(value: number): string {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',

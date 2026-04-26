@@ -1,7 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query'
 import { AxiosError } from 'axios'
 import {
-  formatAmount,
+  formatCurrency,
   formatDistance,
   formatDurationMinutes,
   formatShortDate,
@@ -117,7 +117,7 @@ export function adaptOpportunityCard(item: OpportunityListItem): OpportunityCard
   return {
     id: item.id,
     title: item.jobType?.name ?? 'Oportunidade',
-    amountDisplay: formatAmount(item.creatorNetServiceAmountCents / 100),
+    amountDisplay: formatCurrency(item.creatorNetServiceAmountCents / 100),
     description: item.description || 'Sem descrição',
     dateDisplay: formatShortDate(item.startsAt),
     durationDisplay: formatDurationMinutes(item.durationMinutes),

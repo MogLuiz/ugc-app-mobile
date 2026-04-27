@@ -60,3 +60,9 @@ export const creatorProfileKeys = {
   all: ['creator-profile'] as const,
   myEdit: (userId: string) => [...creatorProfileKeys.all, 'my-edit', userId] as const,
 }
+
+export const notificationKeys = {
+  all: ['notifications'] as const,
+  list: (page = 1, limit = 20) => [...notificationKeys.all, 'list', page, limit] as const,
+  unreadCount: () => [...notificationKeys.all, 'unread-count'] as const,
+}

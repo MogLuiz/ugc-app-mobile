@@ -12,6 +12,7 @@ import {
   adaptHubUpcoming,
 } from '@/modules/creator-home/adapters'
 import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
+import { useUnreadNotificationsCountQuery } from '@/modules/notifications/queries'
 import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
 import { UserMenuBottomSheet, type UserMenuAction } from '@/components/UserMenuBottomSheet'
@@ -27,6 +28,7 @@ export default function HomeScreen() {
   const router = useRouter()
   const { user, signOut } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
+  const unreadNotificationsQuery = useUnreadNotificationsCountQuery()
 
   const menuActions: UserMenuAction[] = [
     {
@@ -137,6 +139,8 @@ export default function HomeScreen() {
         <CreatorDashboardHeader
           userName={user?.name}
           avatarUrl={user?.avatarUrl}
+          unreadNotificationsCount={unreadNotificationsQuery.data?.count ?? 0}
+          onPressNotifications={() => router.push('/(app)/(creator)/notificacoes' as never)}
           onPressAvatar={() => setMenuOpen(true)}
         />
 
@@ -160,7 +164,6 @@ export default function HomeScreen() {
           isLoading={hubQuery.isLoading && !hub}
           error={hubQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
         />
-
       </ScrollView>
 
       <UserMenuBottomSheet

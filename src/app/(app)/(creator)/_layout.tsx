@@ -71,6 +71,7 @@ export default function CreatorTabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen name="notificacoes" options={{ href: null }} />
       <Tabs.Screen name="oportunidades" options={{ href: null }} />
       <Tabs.Screen name="ganhos" options={{ href: null }} />
     </Tabs>

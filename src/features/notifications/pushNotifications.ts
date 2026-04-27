@@ -1,6 +1,35 @@
 import Constants from 'expo-constants'
 import * as Device from 'expo-device'
 import { Platform } from 'react-native'
+import type { NotificationData, NotificationType } from '@/modules/notifications/types'
+
+export type PushRegistrationResult = {
+  token: string | null
+  deviceId?: string
+  deviceName?: string
+  platform?: string
+  appVersion?: string
+  permissionGranted: boolean
+}
+
+export type PushNotificationPayload = {
+  notificationId?: string
+  type?: NotificationType
+  data?: NotificationData | null
+  sourceType?: string
+  sourceId?: string | null
+}
+
+type PushNotificationResponsePayload = {
+  payload: PushNotificationPayload | null
+  responseKey: string
+}
+
+type SetupNotificationListenersOptions = {
+  onNotificationResponse?: (
+    response: PushNotificationResponsePayload,
+  ) => void | Promise<void>
+}
 
 function isExpoGo(): boolean {
   return Constants.executionEnvironment === 'storeClient'
@@ -10,13 +39,20 @@ function isPushNotificationsSupported(): boolean {
   return !isExpoGo()
 }
 
-export async function registerForPushNotificationsAsync(): Promise<string | null> {
+export async function registerForPushNotificationsAsync(): Promise<PushRegistrationResult> {
+  const metadata = {
+    deviceId: Device.osInternalBuildId ?? undefined,
+    deviceName: Device.deviceName ?? undefined,
+    platform: Platform.OS,
+    appVersion: Constants.expoConfig?.version ?? Constants.nativeAppVersion ?? undefined,
+  }
+
   if (!isPushNotificationsSupported()) {
-    return null
+    return { token: null, permissionGranted: false, ...metadata }
   }
 
   if (!Device.isDevice) {
-    throw new Error('Push notifications require a physical device')
+    return { token: null, permissionGranted: false, ...metadata }
   }
 
   const Notifications = await import('expo-notifications')
@@ -39,7 +75,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
   }
 
   if (finalStatus !== 'granted') {
-    throw new Error('Push notification permission denied')
+    return { token: null, permissionGranted: false, ...metadata }
   }
 
   const projectId =
@@ -47,9 +83,7 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId
 
   if (!projectId) {
-    throw new Error(
-      'Expo push token requires a projectId. Set EAS_PROJECT_ID and configure eas.projectId in app.config.ts',
-    )
+    return { token: null, permissionGranted: true, ...metadata }
   }
 
   const tokenData = await Notifications.getExpoPushTokenAsync({ projectId })
@@ -63,10 +97,84 @@ export async function registerForPushNotificationsAsync(): Promise<string | null
     })
   }
 
-  return tokenData.data
+  return {
+    token: tokenData.data,
+    permissionGranted: true,
+    ...metadata,
+  }
 }
 
-export async function setupNotificationListeners(): Promise<() => void> {
+function getString(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null
+}
+
+function getPayloadObject(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null
+}
+
+function extractPushNotificationPayload(
+  data: unknown,
+): PushNotificationPayload | null {
+  const payload = getPayloadObject(data)
+  if (!payload) {
+    return null
+  }
+
+  return {
+    notificationId: getString(payload.notificationId) ?? undefined,
+    type: (getString(payload.type) as NotificationType | null) ?? undefined,
+    sourceType: getString(payload.sourceType) ?? undefined,
+    sourceId: getString(payload.sourceId),
+    data: getPayloadObject(payload.data) as NotificationData | null,
+  }
+}
+
+function buildResponseKey(response: {
+  notification: { request: { identifier: string; content: { data: unknown } } }
+  actionIdentifier: string
+}): string {
+  const payload = extractPushNotificationPayload(response.notification.request.content.data)
+
+  return [
+    response.notification.request.identifier,
+    response.actionIdentifier,
+    payload?.notificationId ?? 'no-notification-id',
+    payload?.type ?? 'no-type',
+  ].join(':')
+}
+
+export async function getLastNotificationResponsePayload(): Promise<PushNotificationResponsePayload | null> {
+  if (!isPushNotificationsSupported()) {
+    return null
+  }
+
+  const Notifications = await import('expo-notifications')
+  const response = await Notifications.getLastNotificationResponseAsync()
+
+  if (!response) {
+    return null
+  }
+
+  return {
+    payload: extractPushNotificationPayload(response.notification.request.content.data),
+    responseKey: buildResponseKey(response),
+  }
+}
+
+export async function clearLastNotificationResponsePayload(): Promise<void> {
+  if (!isPushNotificationsSupported()) {
+    return
+  }
+
+  const Notifications = await import('expo-notifications')
+  await Notifications.clearLastNotificationResponseAsync()
+}
+
+export async function setupNotificationListeners(
+  options?: SetupNotificationListenersOptions,
+): Promise<() => void> {
   if (!isPushNotificationsSupported()) {
     return () => {}
   }
@@ -78,8 +186,11 @@ export async function setupNotificationListeners(): Promise<() => void> {
   })
 
   const responseSubscription = Notifications.addNotificationResponseReceivedListener(
-    (_response) => {
-      // user tapped notification — add deep-link routing here as needed
+    (response) => {
+      void options?.onNotificationResponse?.({
+        payload: extractPushNotificationPayload(response.notification.request.content.data),
+        responseKey: buildResponseKey(response),
+      })
     },
   )
 

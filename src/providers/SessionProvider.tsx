@@ -23,7 +23,41 @@ const SessionContext = createContext<SessionContextValue | null>(null)
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
   const hydrating = useRef(false)
-  const { setAuth, clearAuth } = useAuthStore()
+  const lastRegisteredPushTokenRef = useRef<string | null>(null)
+  const { setAuth, setPushToken, clearAuth } = useAuthStore()
+
+  const syncPushToken = useCallback(async () => {
+    try {
+      const { registerForPushNotificationsAsync } = await import(
+        '@/features/notifications/pushNotifications'
+      )
+      const pushRegistration = await registerForPushNotificationsAsync()
+
+      setPushToken(pushRegistration.token)
+
+      if (!pushRegistration.token) {
+        return
+      }
+
+      if (lastRegisteredPushTokenRef.current === pushRegistration.token) {
+        return
+      }
+
+      await notificationsService.registerDevicePushToken({
+        token: pushRegistration.token,
+        provider: 'expo',
+        deviceId: pushRegistration.deviceId,
+        deviceName: pushRegistration.deviceName,
+        platform: pushRegistration.platform,
+        appVersion: pushRegistration.appVersion,
+        permissionGranted: pushRegistration.permissionGranted,
+      })
+
+      lastRegisteredPushTokenRef.current = pushRegistration.token
+    } catch {
+      // Push registration should never block auth flows.
+    }
+  }, [setPushToken])
 
   useEffect(() => {
     if (hydrating.current) return
@@ -41,6 +75,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         try {
           const user = await authService.getMe(accessToken)
           setAuth(user, accessToken, refreshToken ?? undefined)
+          void syncPushToken()
         } catch (err: unknown) {
           const status = (err as { response?: { status?: number } })?.response?.status
 
@@ -52,6 +87,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
               const { accessToken: storedToken, refreshToken: storedRefresh } =
                 useAuthStore.getState()
               setAuth(user, storedToken ?? newAccessToken, storedRefresh ?? undefined)
+              void syncPushToken()
             } catch {
               await Promise.all([
                 SecureStore.deleteItemAsync(SECURE_STORE_KEYS.accessToken),
@@ -75,7 +111,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     hydrate()
-  }, [setAuth, clearAuth])
+  }, [setAuth, clearAuth, syncPushToken])
 
   const signIn = useCallback(
     async (email: string, password: string) => {
@@ -87,16 +123,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       ])
 
       setAuth(user, accessToken, refreshToken)
-
-      import('@/features/notifications/pushNotifications')
-        .then(({ registerForPushNotificationsAsync }) => registerForPushNotificationsAsync())
-        .then((token) => {
-          if (!token) return
-          return notificationsService.registerDevicePushToken(token)
-        })
-        .catch(() => {})
+      void syncPushToken()
     },
-    [setAuth],
+    [setAuth, syncPushToken],
   )
 
   const signUp = useCallback(
@@ -116,35 +145,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         ])
 
         setAuth(user, accessToken, refreshToken)
-
-        import('@/features/notifications/pushNotifications')
-          .then(({ registerForPushNotificationsAsync }) => registerForPushNotificationsAsync())
-          .then((token) => {
-            if (!token) return
-            return notificationsService.registerDevicePushToken(token)
-          })
-          .catch(() => {})
+        void syncPushToken()
       }
 
       return result.kind
     },
-    [setAuth],
+    [setAuth, syncPushToken],
   )
 
   const signOut = useCallback(async () => {
-    const { accessToken } = useAuthStore.getState()
+    const { pushToken } = useAuthStore.getState()
+
+    if (pushToken) {
+      await notificationsService.unregisterDevicePushToken(pushToken).catch(() => {})
+    }
 
     await authService.signOut()
-
-    if (accessToken) {
-      await notificationsService.unregisterDevicePushToken(accessToken).catch(() => {})
-    }
 
     await Promise.all([
       SecureStore.deleteItemAsync(SECURE_STORE_KEYS.accessToken),
       SecureStore.deleteItemAsync(SECURE_STORE_KEYS.refreshToken),
     ])
 
+    lastRegisteredPushTokenRef.current = null
     clearAuth()
     queryClient.clear()
   }, [clearAuth])

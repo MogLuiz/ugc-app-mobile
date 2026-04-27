@@ -5,9 +5,11 @@ type AuthStore = {
   user: User | null
   accessToken: string | null
   refreshToken: string | null
+  pushToken: string | null
   isAuthenticated: boolean
   setAuth: (user: User, accessToken: string, refreshToken?: string) => void
   setTokens: (accessToken: string, refreshToken: string) => void
+  setPushToken: (pushToken: string | null) => void
   clearAuth: () => void
 }
 
@@ -15,6 +17,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   accessToken: null,
   refreshToken: null,
+  pushToken: null,
   isAuthenticated: false,
 
   setAuth: (user, accessToken, refreshToken) =>
@@ -22,6 +25,14 @@ export const useAuthStore = create<AuthStore>((set) => ({
 
   setTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
 
+  setPushToken: (pushToken) => set({ pushToken }),
+
   clearAuth: () =>
-    set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false }),
+    set({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      pushToken: null,
+      isAuthenticated: false,
+    }),
 }))

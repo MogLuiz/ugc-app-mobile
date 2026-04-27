@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { colors } from '@/theme/colors'
+import { AppScreenHeader } from '@/components/AppScreenHeader'
 import { useConversationsQuery } from '@/modules/chat/queries'
 import type { ConversationListItem } from '@/modules/chat/types'
 import { ConversationItem } from './_components/ConversationItem'
@@ -166,12 +167,7 @@ export default function MensagensScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mensagens</Text>
-        {hasAnyConversations ? (
-          <View style={styles.countBadge}>
-            <Text style={styles.countText}>{String(ordered.length)}</Text>
-          </View>
-        ) : null}
+        <AppScreenHeader title="Mensagens" />
       </View>
 
       {isFirstLoad ? (
@@ -242,29 +238,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.light,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text.primary.light,
-    letterSpacing: -0.5,
-  },
-  countBadge: {
-    backgroundColor: '#ede9fb',
-    borderRadius: 100,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  countText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#7c3aed',
+    paddingHorizontal: 16,
   },
   filters: {
     flexGrow: 0,

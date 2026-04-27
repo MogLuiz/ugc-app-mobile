@@ -11,6 +11,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { AppScreenHeader } from '@/components/AppScreenHeader'
 import {
   useAcceptCreatorBookingMutation,
   useCreatorCalendarQuery,
@@ -310,16 +311,10 @@ export default function AgendaScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.title}>Agenda</Text>
-            {!isFirstLoad && !errorMessage && viewModel ? (
-              <Text style={styles.subtitle}>{commitmentSubtitle(totalEvents)}</Text>
-            ) : null}
-          </View>
-          {calendarQuery.isFetching && !isFirstLoad ? (
-            <Ionicons name="refresh-outline" size={18} color={colors.primary} />
+          <AppScreenHeader title="Agenda" />
+          {!isFirstLoad && !errorMessage && viewModel ? (
+            <Text style={styles.subtitle}>{commitmentSubtitle(totalEvents)}</Text>
           ) : null}
         </View>
 
@@ -399,23 +394,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 4,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.text.primary.light,
-    letterSpacing: -0.5,
+    paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 13,
     color: colors.text.secondary.light,
-    marginTop: 2,
+    marginTop: -8,
+    marginBottom: 4,
+    paddingHorizontal: 16,
   },
   stripWrap: {
     paddingHorizontal: 16,

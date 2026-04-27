@@ -8,7 +8,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
 import { AppScreenHeader } from '@/components/AppScreenHeader'
@@ -190,7 +190,6 @@ const errorStyles = StyleSheet.create({
 
 export default function AgendaScreen() {
   const router = useRouter()
-  const insets = useSafeAreaInsets()
   const timelineScrollRef = useRef<ScrollView>(null)
 
   const [periodStart, setPeriodStart] = useState(() => startOfDay(new Date()))
@@ -308,68 +307,80 @@ export default function AgendaScreen() {
   const totalEvents = viewModel?.weeklyStats.jobCount ?? 0
   const hasEvents = totalEvents > 0
 
+  const scrollHeader = viewModel ? (
+    <View style={styles.scrollHeader}>
+      <View style={styles.titleBlock}>
+        <AppScreenHeader title="Agenda" />
+        <Text style={styles.subtitle}>{commitmentSubtitle(totalEvents)}</Text>
+      </View>
+
+      <View style={styles.stripWrap}>
+        <WeekStrip
+          weekDays={viewModel.weekDays}
+          selectedDateKey={selectedDateKey}
+          weekRangeLabelCompact={viewModel.weekRangeLabelCompact}
+          onPrev={goToPrevPeriod}
+          onNext={goToNextPeriod}
+          onSelectDay={selectDay}
+        />
+      </View>
+
+      {viewModel.rangePastNotice !== 'none' ? (
+        <View style={styles.pastNotice}>
+          <Ionicons name="time-outline" size={14} color="#7c3aed" />
+          <Text style={styles.pastNoticeText}>
+            {viewModel.rangePastNotice === 'full'
+              ? 'Todo este período já passou.'
+              : 'Parte deste período já passou.'}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  ) : null
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <AppScreenHeader title="Agenda" />
-          {!isFirstLoad && !errorMessage && viewModel ? (
-            <Text style={styles.subtitle}>{commitmentSubtitle(totalEvents)}</Text>
-          ) : null}
-        </View>
-
-        {/* Content */}
-        {isFirstLoad ? (
+      {isFirstLoad ? (
+        <ScrollView>
+          <View style={styles.titleBlock}>
+            <AppScreenHeader title="Agenda" />
+          </View>
           <AgendaSkeleton />
-        ) : errorMessage ? (
+        </ScrollView>
+      ) : errorMessage ? (
+        <ScrollView>
+          <View style={styles.titleBlock}>
+            <AppScreenHeader title="Agenda" />
+          </View>
           <ErrorState
             message={errorMessage}
             onRetry={() => void calendarQuery.refetch()}
           />
-        ) : !viewModel ? null : (
-          <>
-            <View style={styles.stripWrap}>
-              <WeekStrip
-                weekDays={viewModel.weekDays}
-                selectedDateKey={selectedDateKey}
-                weekRangeLabelCompact={viewModel.weekRangeLabelCompact}
-                onPrev={goToPrevPeriod}
-                onNext={goToNextPeriod}
-                onSelectDay={selectDay}
-              />
-            </View>
-
-            {viewModel.rangePastNotice === 'full' ? (
-              <View style={styles.pastNotice}>
-                <Ionicons name="time-outline" size={14} color="#7c3aed" />
-                <Text style={styles.pastNoticeText}>
-                  Todo este período já passou.
-                </Text>
-              </View>
-            ) : viewModel.rangePastNotice === 'partial' ? (
-              <View style={styles.pastNotice}>
-                <Ionicons name="time-outline" size={14} color="#7c3aed" />
-                <Text style={styles.pastNoticeText}>
-                  Parte deste período já passou.
-                </Text>
-              </View>
-            ) : null}
-
-            {!hasEvents ? (
-              <EmptyState />
-            ) : (
-              <AgendaTimeline
-                viewModel={viewModel}
-                selectedDateKey={selectedDateKey}
-                onOpenEvent={openEvent}
-                scrollRef={timelineScrollRef}
-                refreshing={calendarQuery.isRefetching}
-                onRefresh={() => void calendarQuery.refetch()}
-              />
-            )}
-          </>
-        )}
-      </View>
+        </ScrollView>
+      ) : !viewModel ? null : !hasEvents ? (
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={calendarQuery.isRefetching}
+              onRefresh={() => void calendarQuery.refetch()}
+              tintColor="#895af6"
+            />
+          }
+        >
+          {scrollHeader}
+          <EmptyState />
+        </ScrollView>
+      ) : (
+        <AgendaTimeline
+          viewModel={viewModel}
+          selectedDateKey={selectedDateKey}
+          onOpenEvent={openEvent}
+          scrollRef={timelineScrollRef}
+          refreshing={calendarQuery.isRefetching}
+          onRefresh={() => void calendarQuery.refetch()}
+          header={scrollHeader}
+        />
+      )}
 
       <EventSheet
         event={selectedEvent}
@@ -390,29 +401,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f6f5f8',
   },
-  container: {
-    flex: 1,
+  scrollHeader: {
+    gap: 4,
+    paddingBottom: 16,
   },
-  header: {
+  titleBlock: {
     paddingHorizontal: 16,
   },
   subtitle: {
     fontSize: 13,
     color: colors.text.secondary.light,
-    marginTop: -8,
-    marginBottom: 4,
-    paddingHorizontal: 16,
+    marginTop: -10,
+    paddingBottom: 4,
   },
   stripWrap: {
     paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     paddingBottom: 8,
   },
   pastNotice: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    marginHorizontal: 20,
+    marginHorizontal: 16,
     marginBottom: 4,
     backgroundColor: 'rgba(137,90,246,0.07)',
     paddingHorizontal: 12,

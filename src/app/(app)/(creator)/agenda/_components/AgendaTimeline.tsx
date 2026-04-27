@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { RefObject } from 'react'
+import type { ReactNode, RefObject } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { formatTimeInTimeZone } from '@/modules/creator-calendar/lib/calendar-tz'
 import { formatMobileFreeGapDurationLabel } from '@/modules/creator-calendar/lib/calendar-display'
@@ -249,6 +249,7 @@ function DaySection({ section, viewModel, now, onOpenEvent }: DaySectionProps) {
 const daySectionStyles = StyleSheet.create({
   container: {
     marginBottom: 28,
+    paddingHorizontal: 20,
   },
 })
 
@@ -259,6 +260,7 @@ type AgendaTimelineProps = {
   scrollRef?: RefObject<ScrollView | null>
   refreshing?: boolean
   onRefresh?: () => void
+  header?: ReactNode
 }
 
 export function AgendaTimeline({
@@ -268,6 +270,7 @@ export function AgendaTimeline({
   scrollRef,
   refreshing = false,
   onRefresh,
+  header,
 }: AgendaTimelineProps) {
   const now = useNow()
   const sectionOffsets = useRef<Record<string, number>>({})
@@ -292,6 +295,7 @@ export function AgendaTimeline({
         ) : undefined
       }
     >
+      {header ?? null}
       {viewModel.timelineByDay.map((section) => (
         <View
           key={section.dateKey}
@@ -313,8 +317,7 @@ export function AgendaTimeline({
 
 const timelineStyles = StyleSheet.create({
   content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
     paddingBottom: 40,
+    paddingTop: 8,
   },
 })

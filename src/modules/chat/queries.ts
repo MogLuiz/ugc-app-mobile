@@ -2,11 +2,18 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { chatKeys } from '@/lib/query-keys'
 import { getConversationMessages, getConversations, sendConversationMessage } from './service'
 
-export function useConversationsQuery(contractRequestId?: string) {
+type UseConversationsQueryOptions = {
+  contractRequestId?: string
+  refetchIntervalMs?: number | false
+}
+
+export function useConversationsQuery(options?: UseConversationsQueryOptions) {
+  const contractRequestId = options?.contractRequestId
+
   return useQuery({
     queryKey: chatKeys.conversations(contractRequestId),
     queryFn: () => getConversations({ contractRequestId }),
-    refetchInterval: 10_000,
+    refetchInterval: options?.refetchIntervalMs ?? false,
     refetchIntervalInBackground: false,
   })
 }

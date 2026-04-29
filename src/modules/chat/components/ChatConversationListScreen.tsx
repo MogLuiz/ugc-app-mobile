@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
 import {
   FlatList,
   Pressable,
@@ -109,8 +110,11 @@ export function ChatConversationListScreen({
   emptyDescription,
 }: Props) {
   const router = useRouter()
+  const isFocused = useIsFocused()
   const [activeFilter, setActiveFilter] = useState<ConversationFilter>('all')
-  const conversationsQuery = useConversationsQuery()
+  const conversationsQuery = useConversationsQuery({
+    refetchIntervalMs: isFocused ? 10_000 : false,
+  })
 
   const ordered = useMemo(
     () => sortConversations(conversationsQuery.data ?? []),

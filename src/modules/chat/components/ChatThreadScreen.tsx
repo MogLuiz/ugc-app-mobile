@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useIsFocused } from '@react-navigation/native'
 import {
   ActivityIndicator,
   FlatList,
@@ -115,9 +116,12 @@ export function ChatThreadScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const insets = useSafeAreaInsets()
+  const isFocused = useIsFocused()
   const { user } = useSession()
 
-  const conversationsQuery = useConversationsQuery()
+  const conversationsQuery = useConversationsQuery({
+    refetchIntervalMs: isFocused ? 10_000 : false,
+  })
   const conversation = useMemo(
     () => conversationsQuery.data?.find((c) => c.id === id) ?? null,
     [conversationsQuery.data, id],

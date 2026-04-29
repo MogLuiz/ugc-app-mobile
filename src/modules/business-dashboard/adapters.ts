@@ -1,7 +1,9 @@
+import { formatOfferExpiry, formatTimeAgo } from '@/lib/formatters'
 import type { ConversationListItem } from '@/modules/chat/types'
 import type {
   BusinessDashboardKpiCardVm,
   BusinessDashboardKpiSourceData,
+  BusinessDashboardPendingResponseItem,
   CompanyHubItem,
   CompanyOffersHubResponse,
 } from './types'
@@ -33,6 +35,43 @@ function getUpcomingRecordingsCount(hub: CompanyOffersHubResponse, now: Date): n
     if (!recordingInstant) return count
     return recordingInstant.getTime() > now.getTime() ? count + 1 : count
   }, 0)
+}
+
+const PENDING_RESPONSES_LIMIT = 3
+
+export function computeHasAnyCampaignData(hub: CompanyOffersHubResponse | undefined): boolean {
+  if (!hub) return false
+  return (
+    (hub.pending?.openOffers?.length ?? 0) > 0 ||
+    (hub.pending?.directInvites?.length ?? 0) > 0 ||
+    (hub.pending?.awaitingPayment?.length ?? 0) > 0 ||
+    (hub.inProgress?.length ?? 0) > 0 ||
+    (hub.finalized?.completed?.length ?? 0) > 0 ||
+    (hub.finalized?.cancelled?.length ?? 0) > 0 ||
+    (hub.finalized?.expiredWithoutHire?.length ?? 0) > 0
+  )
+}
+
+export function mapHubToPendingResponses(
+  hub: CompanyOffersHubResponse | undefined,
+): BusinessDashboardPendingResponseItem[] {
+  const invites = hub?.pending?.directInvites ?? []
+  return invites
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, PENDING_RESPONSES_LIMIT)
+    .map((item) => ({
+      id: item.id,
+      title: item.title,
+      creatorName: item.creatorName ?? 'Creator',
+      creatorAvatarUrl: item.creatorAvatarUrl ?? null,
+      waitingLabel: formatTimeAgo(item.createdAt),
+      expiresLabel: item.effectiveExpiresAt
+        ? formatOfferExpiry(item.effectiveExpiresAt)
+        : item.expiresAt
+          ? formatOfferExpiry(item.expiresAt)
+          : null,
+    }))
 }
 
 export function buildBusinessDashboardKpiValues({

@@ -88,3 +88,12 @@ export type BusinessDashboardKpiSourceData = {
   conversations: ConversationListItem[] | undefined
   now: Date
 }
+
+export type BusinessDashboardPendingResponseItem = {
+  id: string
+  title: string
+  creatorName: string
+  creatorAvatarUrl: string | null
+  waitingLabel: string
+  expiresLabel: string | null
+}

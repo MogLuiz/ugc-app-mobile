@@ -2,7 +2,9 @@ import { UserMenuBottomSheet, type UserMenuAction } from '@/components/UserMenuB
 import { useSession } from '@/hooks/useSession'
 import { BusinessDashboardHeader } from '@/modules/business-dashboard/components/BusinessDashboardHeader'
 import { BusinessDashboardKpiSection } from '@/modules/business-dashboard/components/BusinessDashboardKpiSection'
+import { BusinessPendingResponsesSection } from '@/modules/business-dashboard/components/BusinessPendingResponsesSection'
 import { useBusinessDashboardKpis } from '@/modules/business-dashboard/hooks/useBusinessDashboardKpis'
+import { useBusinessPendingResponsesSection } from '@/modules/business-dashboard/hooks/useBusinessPendingResponsesSection'
 import { useUnreadNotificationsCountQuery } from '@/modules/notifications/queries'
 import { colors } from '@/theme/colors'
 import { useRouter } from 'expo-router'
@@ -17,6 +19,7 @@ export default function BusinessDashboardScreen() {
   const firstName = user?.name?.trim().split(/\s+/)[0] ?? 'Time'
   const unreadNotificationsQuery = useUnreadNotificationsCountQuery()
   const { items, isRefreshing, refreshAll } = useBusinessDashboardKpis()
+  const pendingResponses = useBusinessPendingResponsesSection()
 
   const menuActions: UserMenuAction[] = [
     {
@@ -80,6 +83,7 @@ export default function BusinessDashboardScreen() {
         />
 
         <BusinessDashboardKpiSection items={items} />
+        <BusinessPendingResponsesSection {...pendingResponses} />
       </ScrollView>
 
       <UserMenuBottomSheet

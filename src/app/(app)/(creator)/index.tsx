@@ -140,7 +140,7 @@ export default function HomeScreen() {
           userName={user?.name}
           avatarUrl={user?.avatarUrl}
           unreadNotificationsCount={unreadNotificationsQuery.data?.count ?? 0}
-          onPressNotifications={() => router.push('/(app)/(creator)/notificacoes' as never)}
+          onPressNotifications={() => router.push('/(app)/notificacoes' as never)}
           onPressAvatar={() => setMenuOpen(true)}
         />
 

@@ -1,5 +1,5 @@
-import { Tabs } from 'expo-router'
 import { Ionicons } from '@expo/vector-icons'
+import { Tabs } from 'expo-router'
 
 const ICON_SIZE = 22
 
@@ -40,7 +40,11 @@ export default function CreatorTabsLayout() {
         options={{
           title: 'Campanhas',
           tabBarIcon: ({ focused, color }) => (
-            <Ionicons name={focused ? 'briefcase' : 'briefcase-outline'} size={ICON_SIZE} color={color} />
+            <Ionicons
+              name={focused ? 'briefcase' : 'briefcase-outline'}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
         }}
       />
@@ -49,7 +53,11 @@ export default function CreatorTabsLayout() {
         options={{
           title: 'Agenda',
           tabBarIcon: ({ focused, color }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={ICON_SIZE} color={color} />
+            <Ionicons
+              name={focused ? 'calendar' : 'calendar-outline'}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
         }}
       />
@@ -58,7 +66,11 @@ export default function CreatorTabsLayout() {
         options={{
           title: 'Mensagens',
           tabBarIcon: ({ focused, color }) => (
-            <Ionicons name={focused ? 'chatbubbles' : 'chatbubbles-outline'} size={ICON_SIZE} color={color} />
+            <Ionicons
+              name={focused ? 'chatbubbles' : 'chatbubbles-outline'}
+              size={ICON_SIZE}
+              color={color}
+            />
           ),
         }}
       />
@@ -71,9 +83,9 @@ export default function CreatorTabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="notificacoes" options={{ href: null }} />
-      <Tabs.Screen name="oportunidades" options={{ href: null }} />
-      <Tabs.Screen name="ganhos" options={{ href: null }} />
+
+      <Tabs.Screen name="oportunidades" options={{ tabBarItemStyle: { display: 'none' } }} />
+      <Tabs.Screen name="ganhos" options={{ tabBarItemStyle: { display: 'none' } }} />
     </Tabs>
   )
 }

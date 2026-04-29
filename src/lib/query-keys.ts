@@ -35,6 +35,11 @@ export const creatorDashboardKeys = {
   summary: () => [...creatorDashboardKeys.all, 'summary'] as const,
 }
 
+export const businessDashboardKeys = {
+  all: ['business-dashboard'] as const,
+  companyOffersHub: () => [...businessDashboardKeys.all, 'company-offers-hub'] as const,
+}
+
 export const creatorHubKeys = {
   all: ['creator-hub'] as const,
   hub: () => [...creatorHubKeys.all, 'hub'] as const,

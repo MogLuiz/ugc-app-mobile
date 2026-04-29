@@ -1,53 +1,108 @@
-import { useRouter } from 'expo-router'
-import { BusinessActionTile, BusinessInfoPill } from '../_components/BusinessActionTile'
-import { BusinessCard, BusinessScaffold, BusinessSectionTitle } from '../_components/BusinessScaffold'
+import { UserMenuBottomSheet, type UserMenuAction } from '@/components/UserMenuBottomSheet'
 import { useSession } from '@/hooks/useSession'
+import { BusinessDashboardHeader } from '@/modules/business-dashboard/components/BusinessDashboardHeader'
+import { BusinessDashboardKpiSection } from '@/modules/business-dashboard/components/BusinessDashboardKpiSection'
+import { useBusinessDashboardKpis } from '@/modules/business-dashboard/hooks/useBusinessDashboardKpis'
+import { useUnreadNotificationsCountQuery } from '@/modules/notifications/queries'
+import { colors } from '@/theme/colors'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
+import { Alert, RefreshControl, ScrollView, StyleSheet } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function BusinessDashboardScreen() {
   const router = useRouter()
-  const { user } = useSession()
+  const { user, signOut } = useSession()
+  const [menuOpen, setMenuOpen] = useState(false)
   const firstName = user?.name?.trim().split(/\s+/)[0] ?? 'Time'
+  const unreadNotificationsQuery = useUnreadNotificationsCountQuery()
+  const { items, isRefreshing, refreshAll } = useBusinessDashboardKpis()
+
+  const menuActions: UserMenuAction[] = [
+    {
+      label: 'Perfil',
+      icon: 'user',
+      onPress: () => {
+        setMenuOpen(false)
+        router.push('/(business)/perfil' as never)
+      },
+    },
+    {
+      label: 'Financeiro',
+      icon: 'dollar-sign',
+      onPress: () => {
+        setMenuOpen(false)
+        router.push('/(business)/financeiro' as never)
+      },
+    },
+    {
+      label: 'Configurações',
+      icon: 'settings',
+      onPress: () => {
+        setMenuOpen(false)
+        router.push('/configuracoes' as never)
+      },
+    },
+    {
+      label: 'Sair',
+      icon: 'log-out',
+      danger: true,
+      onPress: () => {
+        setMenuOpen(false)
+        signOut().catch(() => {
+          Alert.alert('Erro ao sair', 'Não foi possível encerrar sua sessão. Tente novamente.')
+        })
+      },
+    },
+  ]
 
   return (
-    <BusinessScaffold
-      title="Início"
-      subtitle={`Bem-vinda, ${firstName}. Esta é a base inicial da navegação da empresa no app.`}
-    >
-      <BusinessCard
-        title="Dashboard em evolução"
-        description="Nesta etapa, a tela foca em atalhos e estrutura. Os blocos operacionais do web entram nas próximas fases."
-        trailing={<BusinessInfoPill>Fundação</BusinessInfoPill>}
-      />
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refreshAll}
+            tintColor={colors.primary}
+          />
+        }
+      >
+        <BusinessDashboardHeader
+          title="Painel da empresa"
+          subtitle="Campanhas, creators e oportunidades."
+          userName={user?.name}
+          avatarUrl={user?.avatarUrl}
+          notificationCount={unreadNotificationsQuery.data?.count ?? 0}
+          onPressNotifications={() => router.push('/(app)/notificacoes' as never)}
+          onPressAvatar={() => setMenuOpen(true)}
+        />
 
-      <BusinessSectionTitle>Atalhos principais</BusinessSectionTitle>
-      <BusinessActionTile
-        icon="briefcase-outline"
-        title="Campanhas"
-        description="Ver ofertas, abrir detalhes e preparar a criação de novas campanhas."
-        onPress={() => router.push('/(business)/campanhas' as never)}
-      />
-      <BusinessActionTile
-        icon="compass-outline"
-        title="Marketplace"
-        description="Explorar creators e validar a futura navegação de detalhe."
-        onPress={() => router.push('/(business)/marketplace' as never)}
-      />
-      <BusinessActionTile
-        icon="wallet-outline"
-        title="Financeiro"
-        description="Abrir a stack fora das tabs para pagamentos, créditos e reembolsos."
-        onPress={() => router.push('/(business)/financeiro' as never)}
-      />
+        <BusinessDashboardKpiSection items={items} />
+      </ScrollView>
 
-      <BusinessSectionTitle>Próximas entregas</BusinessSectionTitle>
-      <BusinessCard
-        title="Mensagens já reaproveitadas"
-        description="A aba de mensagens usa o módulo mobile existente de chat com detalhe em stack."
+      <UserMenuBottomSheet
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        userName={user?.name}
+        avatarUrl={user?.avatarUrl}
+        userRole={user?.role}
+        actions={menuActions}
       />
-      <BusinessCard
-        title="Shells preparados"
-        description="Campanhas, marketplace, perfil e financeiro já têm rotas navegáveis para a evolução tela a tela."
-      />
-    </BusinessScaffold>
+    </SafeAreaView>
   )
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background.light,
+  },
+  content: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 32,
+    gap: 24,
+  },
+})

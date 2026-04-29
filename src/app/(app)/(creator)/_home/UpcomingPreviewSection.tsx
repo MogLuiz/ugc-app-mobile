@@ -47,69 +47,42 @@ export function UpcomingPreviewSection({
         <View style={styles.list}>
           {items.map((item) => {
             const sc = statusColors(item.statusBadge)
-            const isConfirmRequired = item.primaryAction === 'CONFIRM_OR_DISPUTE'
             return (
-              <View key={item.id} style={styles.cardWrapper}>
-                <Pressable
-                  style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-                  onPress={() => router.push(item.href as never)}
-                >
-                  <View style={styles.cardLeft}>
-                    <Text style={styles.dateText}>{item.dateDisplay}</Text>
-                    <Text style={styles.timeText}>{item.timeDisplay}</Text>
+              <Pressable
+                key={item.id}
+                style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                onPress={() => router.push(item.href as never)}
+              >
+                <View style={styles.headerRow}>
+                  <Text style={styles.campaignName} numberOfLines={1}>
+                    {item.campaignName}
+                  </Text>
+                  <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
+                    <Text style={[styles.statusText, { color: sc.fg }]}>{item.statusBadge}</Text>
                   </View>
-                  <View style={styles.cardBody}>
-                    <View style={styles.cardTopRow}>
-                      <Text style={styles.campaignName} numberOfLines={1}>
-                        {item.campaignName}
-                      </Text>
-                      <View style={[styles.statusBadge, { backgroundColor: sc.bg }]}>
-                        <Text style={[styles.statusText, { color: sc.fg }]}>
-                          {item.statusBadge}
+                  <Ionicons name="chevron-forward" size={15} color={colors.border.light} />
+                </View>
+
+                <Text style={styles.companyName} numberOfLines={1}>
+                  {item.companyName}
+                </Text>
+
+                {item.dateDisplay || item.locationDisplay ? (
+                  <View style={styles.metaRow}>
+                    <Ionicons name="calendar-outline" size={11} color={colors.primary} />
+                    <Text style={styles.metaText}>{item.dateDisplay}</Text>
+                    {item.locationDisplay ? (
+                      <>
+                        <Text style={styles.metaDot}>·</Text>
+                        <Ionicons name="location-outline" size={11} color={colors.primary} />
+                        <Text style={styles.metaText} numberOfLines={1}>
+                          {item.locationDisplay}
                         </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.companyName} numberOfLines={1}>
-                      {item.companyName}
-                    </Text>
-                    {(item.locationDisplay || item.durationDisplay) ? (
-                      <View style={styles.metaRow}>
-                        {item.locationDisplay ? (
-                          <>
-                            <Ionicons name="location-outline" size={11} color={colors.primary} />
-                            <Text style={styles.metaText} numberOfLines={1}>
-                              {item.locationDisplay}
-                            </Text>
-                          </>
-                        ) : null}
-                        {item.locationDisplay && item.durationDisplay ? (
-                          <Text style={styles.metaDot}>·</Text>
-                        ) : null}
-                        {item.durationDisplay ? (
-                          <>
-                            <Ionicons name="time-outline" size={11} color={colors.primary} />
-                            <Text style={styles.metaText}>{item.durationDisplay}</Text>
-                          </>
-                        ) : null}
-                      </View>
+                      </>
                     ) : null}
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.border.light} />
-                </Pressable>
-
-                {isConfirmRequired ? (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.confirmStrip,
-                      pressed && styles.confirmStripPressed,
-                    ]}
-                    onPress={() => router.push(item.href as never)}
-                  >
-                    <Text style={styles.confirmText}>Confirmar serviço realizado</Text>
-                    <Ionicons name="chevron-forward" size={14} color="#fff" />
-                  </Pressable>
                 ) : null}
-              </View>
+              </Pressable>
             )
           })}
         </View>
@@ -154,41 +127,16 @@ const styles = StyleSheet.create({
     color: colors.text.secondary.light,
   },
   list: { gap: 8 },
-  cardWrapper: {
+  card: {
+    backgroundColor: colors.surface.light,
     borderRadius: 16,
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border.light,
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surface.light,
     padding: 14,
-    gap: 12,
+    gap: 5,
   },
   cardPressed: { opacity: 0.85 },
-  cardLeft: {
-    width: 46,
-    alignItems: 'center',
-    gap: 2,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.primary,
-    textAlign: 'center',
-  },
-  timeText: {
-    fontSize: 10,
-    color: colors.text.secondary.light,
-    textAlign: 'center',
-  },
-  cardBody: {
-    flex: 1,
-    gap: 2,
-  },
-  cardTopRow: {
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -217,8 +165,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    flexWrap: 'wrap',
     marginTop: 2,
-    flexShrink: 1,
   },
   metaText: {
     fontSize: 11,
@@ -228,21 +176,5 @@ const styles = StyleSheet.create({
   metaDot: {
     fontSize: 11,
     color: colors.text.secondary.light,
-  },
-  confirmStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#f59e0b',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  confirmStripPressed: {
-    opacity: 0.88,
-  },
-  confirmText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#fff',
   },
 })

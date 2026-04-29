@@ -106,6 +106,7 @@ export function useSubmitReviewMutation(contractRequestId: string) {
       void queryClient.invalidateQueries({
         queryKey: contractRequestKeys.reviews(contractRequestId),
       })
+      void queryClient.invalidateQueries({ queryKey: creatorHubKeys.hub() })
     },
   })
 }

@@ -10,6 +10,7 @@ import {
   adaptCreatorKpis,
   adaptHubInvites,
   adaptHubUpcoming,
+  adaptPendingActions,
 } from '@/modules/creator-home/adapters'
 import { CreatorDashboardHeader } from '@/modules/creator-home/components/CreatorDashboardHeader'
 import { useUnreadNotificationsCountQuery } from '@/modules/notifications/queries'
@@ -17,17 +18,23 @@ import { useCreatorOffersHubQuery } from '@/modules/contract-requests/queries'
 import { useSession } from '@/hooks/useSession'
 import { UserMenuBottomSheet, type UserMenuAction } from '@/components/UserMenuBottomSheet'
 import { colors } from '@/theme/colors'
+import type { PendingActionVm } from '@/modules/creator-home/types'
 import { CreatorKpiSection } from './_home/CreatorKpiSection'
 import { UpcomingPreviewSection } from './_home/UpcomingPreviewSection'
 import { PendingInvitesPreviewSection } from './_home/PendingInvitesPreviewSection'
-
 import { AvailableOpportunitiesPreviewSection } from './_home/AvailableOpportunitiesPreviewSection'
-import { PendingReviewsPreviewSection } from './_home/PendingReviewsPreviewSection'
+import { PendingActionsPreviewSection } from './_home/PendingActionsPreviewSection'
+import { ReviewSheet } from './_home/ReviewSheet'
+import { ConfirmCompletionSheet } from './_home/ConfirmCompletionSheet'
+
+const PENDING_ACTIONS_LIMIT = 3
 
 export default function HomeScreen() {
   const router = useRouter()
   const { user, signOut } = useSession()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [reviewTarget, setReviewTarget] = useState<PendingActionVm | null>(null)
+  const [confirmTarget, setConfirmTarget] = useState<PendingActionVm | null>(null)
   const unreadNotificationsQuery = useUnreadNotificationsCountQuery()
 
   const menuActions: UserMenuAction[] = [
@@ -117,11 +124,16 @@ export default function HomeScreen() {
   const invites = hub ? adaptHubInvites(hub.pending.invites) : []
   const upcoming = hub ? adaptHubUpcoming(hub.inProgress, now) : []
 
-  const allPendingReviews = hub
-    ? hub.finalized.completed.filter((c) => c.myReviewPending === true)
+  const allPendingActions = hub
+    ? adaptPendingActions(hub.inProgress, hub.finalized.completed)
     : []
-  const pendingReviews = allPendingReviews.slice(0, 2)
-  const hasPendingReviewsOverflow = allPendingReviews.length > 2
+  const pendingActions = allPendingActions.slice(0, PENDING_ACTIONS_LIMIT)
+  const hasPendingActionsOverflow = allPendingActions.length > PENDING_ACTIONS_LIMIT
+
+  function handleReportProblem(itemId: string) {
+    setConfirmTarget(null)
+    router.push(`/(creator)/propostas/${itemId}` as never)
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -154,9 +166,11 @@ export default function HomeScreen() {
           error={hubQuery.error ? 'Não foi possível carregar os convites de trabalho.' : null}
         />
 
-        <PendingReviewsPreviewSection
-          items={pendingReviews}
-          hasOverflow={hasPendingReviewsOverflow}
+        <PendingActionsPreviewSection
+          items={pendingActions}
+          hasOverflow={hasPendingActionsOverflow}
+          onConfirm={(item) => setConfirmTarget(item)}
+          onReview={(item) => setReviewTarget(item)}
         />
 
         <UpcomingPreviewSection
@@ -173,6 +187,21 @@ export default function HomeScreen() {
         avatarUrl={user?.avatarUrl}
         userRole={user?.role}
         actions={menuActions}
+      />
+
+      <ReviewSheet
+        item={reviewTarget}
+        visible={reviewTarget !== null}
+        onClose={() => setReviewTarget(null)}
+        onSuccess={() => setReviewTarget(null)}
+      />
+
+      <ConfirmCompletionSheet
+        item={confirmTarget}
+        visible={confirmTarget !== null}
+        onClose={() => setConfirmTarget(null)}
+        onSuccess={() => setConfirmTarget(null)}
+        onReportProblem={handleReportProblem}
       />
     </SafeAreaView>
   )

@@ -4,6 +4,7 @@ import type { CreatorPayout } from '@/modules/creator-payouts/types'
 import type {
   ConversationSummaryItem,
   CreatorKpiCardVm,
+  PendingActionVm,
   UpcomingPreviewVm,
   WorkInvitePreviewVm,
 } from './types'
@@ -66,40 +67,84 @@ export function adaptHubInvites(items: CreatorHubItem[], limit = 2): WorkInviteP
   }))
 }
 
+// Centralised rule used by both adaptHubUpcoming (to exclude) and adaptPendingActions (to include).
+export function isAwaitingConfirmation(item: CreatorHubItem): boolean {
+  return (
+    item.displayStatus === 'AWAITING_CONFIRMATION' ||
+    item.primaryAction === 'CONFIRM_OR_DISPUTE' ||
+    item.canConfirmCompletion === true
+  )
+}
+
+function formatDayMonth(isoDate: string | null): string | null {
+  if (!isoDate) return null
+  return new Date(isoDate).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
+}
+
 export function adaptHubUpcoming(
   items: CreatorHubItem[],
   now: Date,
   limit = 3,
 ): UpcomingPreviewVm[] {
   return items
-    .filter((item) => item.startsAt != null)
+    .filter((item) => item.startsAt != null && !isAwaitingConfirmation(item))
     .sort((a, b) => new Date(a.startsAt!).getTime() - new Date(b.startsAt!).getTime())
     .slice(0, limit)
     .map((item) => {
       const d = new Date(item.startsAt!)
-      const statusBadge =
-        item.displayStatus === 'AWAITING_CONFIRMATION'
-          ? 'Concluída'
-          : item.displayStatus === 'IN_DISPUTE'
-            ? 'Pendente'
-            : 'Confirmada'
+      const dateStr = d
+        .toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+        .replace(/\./g, '')
+        .trim()
+      const timeStr = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      const statusBadge = item.displayStatus === 'IN_DISPUTE' ? 'Pendente' : 'Confirmada'
       return {
         id: item.id,
         campaignName: item.title,
         companyName: item.company.name,
-        dateDisplay: formatShortDate(item.startsAt!),
-        timeDisplay: d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-        locationDisplay:
-          item.displayStatus === 'AWAITING_CONFIRMATION'
-            ? null
-            : (item.address ?? item.locationDisplay),
-        durationDisplay: '',
+        dateDisplay: `${dateStr} · ${timeStr}`,
+        locationDisplay: item.address ?? item.locationDisplay,
         statusBadge,
-        primaryAction:
-          item.displayStatus === 'AWAITING_CONFIRMATION' ? 'CONFIRM_OR_DISPUTE' : 'VIEW',
         href: `/(creator)/propostas/${item.id}`,
       }
     })
+}
+
+export function adaptPendingActions(
+  inProgress: CreatorHubItem[],
+  completed: CreatorHubItem[],
+): PendingActionVm[] {
+  const confirmItems: PendingActionVm[] = inProgress
+    .filter(isAwaitingConfirmation)
+    .map((item) => {
+      const dayMonth = formatDayMonth(item.startsAt)
+      return {
+        id: item.id,
+        kind: 'confirm_completion' as const,
+        companyName: item.company.name,
+        companyLogoUrl: item.company.logoUrl,
+        title: item.title,
+        jobTypeName: item.jobTypeName ?? null,
+        dateLabel: dayMonth ? `Realizado em ${dayMonth}` : null,
+      }
+    })
+
+  const reviewItems: PendingActionVm[] = completed
+    .filter((item) => item.myReviewPending === true)
+    .map((item) => {
+      const dayMonth = formatDayMonth(item.finalizedAt ?? item.startsAt)
+      return {
+        id: item.id,
+        kind: 'review_company' as const,
+        companyName: item.company.name,
+        companyLogoUrl: item.company.logoUrl,
+        title: item.title,
+        jobTypeName: item.jobTypeName ?? null,
+        dateLabel: dayMonth ? `Concluído em ${dayMonth}` : null,
+      }
+    })
+
+  return [...confirmItems, ...reviewItems]
 }
 
 export function deriveUnreadCount(conversations: ConversationSummaryItem[]): number {

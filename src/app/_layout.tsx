@@ -17,6 +17,7 @@ SplashScreen.preventAutoHideAsync()
 function RootNavigator() {
   const { isLoading } = useSessionContext()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const userRole = useAuthStore((s) => s.user?.role)
   const router = useRouter()
   const handledNotificationResponseKeysRef = useRef<Set<string>>(new Set())
 
@@ -70,7 +71,7 @@ function RootNavigator() {
         sourceType: payload.sourceType ?? '',
         sourceId: payload.sourceId ?? null,
         data: payload.data ?? null,
-      })
+      }, userRole ?? 'creator')
 
       const markAsReadPromise = payload.notificationId
         ? notificationsService
@@ -117,7 +118,7 @@ function RootNavigator() {
       cancelled = true
       cleanup?.()
     }
-  }, [isAuthenticated, isLoading, router])
+  }, [isAuthenticated, isLoading, router, userRole])
 
   if (isLoading) return null
 

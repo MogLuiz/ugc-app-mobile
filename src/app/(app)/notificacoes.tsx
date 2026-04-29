@@ -12,6 +12,7 @@ import {
   useUnreadNotificationsCountQuery,
 } from '@/modules/notifications/queries'
 import type { NotificationItem } from '@/modules/notifications/types'
+import { useAuthStore } from '@/store/auth.store'
 import { colors } from '@/theme/colors'
 import theme from '@/theme/theme'
 
@@ -138,6 +139,7 @@ function NotificationCard({
 
 export default function NotificationsScreen() {
   const router = useRouter()
+  const userRole = useAuthStore((s) => s.user?.role)
   const notificationsQuery = useNotificationsQuery({ page: 1, limit: 20 })
   const unreadCountQuery = useUnreadNotificationsCountQuery()
   const markAsReadMutation = useMarkNotificationAsReadMutation()
@@ -149,7 +151,7 @@ export default function NotificationsScreen() {
   const hasError = notificationsQuery.isError && notifications.length === 0
 
   async function handlePressNotification(item: NotificationItem) {
-    const destination = resolveNotificationDestination(item)
+    const destination = resolveNotificationDestination(item, userRole ?? 'creator')
 
     if (!item.readAt && !markAsReadMutation.isPending) {
       try {

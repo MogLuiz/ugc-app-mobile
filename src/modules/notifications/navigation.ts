@@ -1,5 +1,6 @@
 import type { Href } from 'expo-router'
 import type { NotificationItem } from './types'
+import type { UserRole } from '@/types'
 
 export type NotificationNavigationInput = Pick<
   NotificationItem,
@@ -30,13 +31,17 @@ function getContractRequestId(notification: NotificationNavigationInput): string
 
 export function resolveNotificationDestination(
   notification: NotificationNavigationInput,
+  currentUserRole: UserRole = 'creator',
 ): NotificationDestination | null {
   switch (notification.type) {
     case 'message_received': {
       const conversationId = getConversationId(notification)
       if (!conversationId) return null
       return {
-        href: `/(creator)/mensagens/${conversationId}` as Href,
+        href:
+          currentUserRole === 'business'
+            ? (`/(business)/mensagens/${conversationId}` as Href)
+            : (`/(creator)/mensagens/${conversationId}` as Href),
       }
     }
 

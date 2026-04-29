@@ -38,7 +38,7 @@ export function PayoutDetailSheet({ payout, onClose }: Props) {
 
   function handleVerCampanha(contractRequestId: string) {
     onClose()
-    router.push(`/(app)/(creator)/propostas/${contractRequestId}` as never)
+    router.push(`/(creator)/propostas/${contractRequestId}` as never)
   }
 
   return (

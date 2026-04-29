@@ -43,7 +43,7 @@ export default function HomeScreen() {
       icon: 'user',
       onPress: () => {
         setMenuOpen(false)
-        router.push('/(app)/(creator)/perfil')
+        router.push('/(creator)/perfil' as never)
       },
     },
     {
@@ -51,7 +51,7 @@ export default function HomeScreen() {
       icon: 'dollar-sign',
       onPress: () => {
         setMenuOpen(false)
-        router.push('/(app)/(creator)/ganhos' as never)
+        router.push('/(creator)/ganhos' as never)
       },
     },
     {
@@ -158,8 +158,6 @@ export default function HomeScreen() {
 
         <CreatorKpiSection items={kpis} isLoading={isKpiLoading} error={kpiError} />
 
-        <AvailableOpportunitiesPreviewSection />
-
         <PendingInvitesPreviewSection
           items={invites}
           isLoading={hubQuery.isLoading && !hub}
@@ -178,6 +176,8 @@ export default function HomeScreen() {
           isLoading={hubQuery.isLoading && !hub}
           error={hubQuery.error ? 'Não foi possível carregar os próximos trabalhos.' : null}
         />
+
+        <AvailableOpportunitiesPreviewSection />
       </ScrollView>
 
       <UserMenuBottomSheet

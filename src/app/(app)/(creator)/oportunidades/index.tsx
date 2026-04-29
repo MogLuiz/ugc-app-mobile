@@ -4,7 +4,6 @@ import { useRouter } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { MobileEmptyState } from '@/components/MobileEmptyState'
-import { AppScreenHeader } from '@/components/AppScreenHeader'
 import { colors } from '@/theme/colors'
 import {
   extractWorkTypes,
@@ -188,6 +187,15 @@ export default function OportunidadesScreen() {
     void query.refetch()
   }
 
+  function handleGoBack() {
+    if (router.canGoBack()) {
+      router.back()
+      return
+    }
+
+    router.replace('/(creator)' as never)
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView
@@ -201,7 +209,23 @@ export default function OportunidadesScreen() {
         }
       >
         <View style={styles.header}>
-          <AppScreenHeader title="Oportunidades" />
+          <Pressable
+            accessibilityLabel="Voltar para dashboard"
+            accessibilityRole="button"
+            hitSlop={10}
+            onPress={handleGoBack}
+            style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+          >
+            <Ionicons name="arrow-back" size={18} color={colors.text.primary.light} />
+            <Text style={styles.backButtonText}>Voltar</Text>
+          </Pressable>
+
+          <View style={styles.headerTextBlock}>
+            <Text style={styles.title}>Oportunidades</Text>
+            <Text style={styles.subtitle}>
+              Encontre vagas abertas e candidate-se para trabalhar com empresas locais.
+            </Text>
+          </View>
         </View>
 
         {showBanner ? <Banner /> : null}
@@ -441,11 +465,37 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
     paddingTop: 16,
-    paddingBottom: 32,
+    paddingBottom: 40,
     gap: 16,
   },
   header: {
-    paddingHorizontal: 0,
+    gap: 12,
+  },
+  backButton: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+  },
+  backButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary.light,
+  },
+  headerTextBlock: {
+    gap: 4,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: '900',
+    letterSpacing: -0.75,
+    color: colors.text.primary.light,
+  },
+  subtitle: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.text.secondary.light,
   },
   banner: {
     flexDirection: 'row',

@@ -52,7 +52,7 @@ export function resolveNotificationDestination(
 
     case 'payout_updated':
       return {
-        href: '/(app)/(creator)/ganhos' as Href,
+        href: '/(creator)/ganhos' as Href,
       }
 
     default:

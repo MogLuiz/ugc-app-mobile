@@ -11,7 +11,7 @@ import { colors } from '@/theme/colors'
 
 function resolveHref(item: CreatorHubItem): string {
   if (item.kind === 'open_offer_application' && item.openOfferId) {
-    return `/(creator)/oportunidades/${item.openOfferId}`
+    return '/(creator)/oportunidades'
   }
   return `/(creator)/propostas/${item.id}`
 }

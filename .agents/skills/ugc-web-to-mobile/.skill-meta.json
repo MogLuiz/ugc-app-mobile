@@ -1,0 +1,15 @@
+{
+  "name": "ugc-web-to-mobile",
+  "version": "1.0.0",
+  "scope": "Porting web screens to React Native/Expo — UGC project only",
+  "triggers": [
+    "porte essa tela para mobile",
+    "converte essa tela",
+    "migrar tela web para mobile",
+    "implementar no mobile",
+    "portar para mobile",
+    "trazer do web para mobile"
+  ],
+  "requires": ["react-native-expert"],
+  "createdAt": "2026-04-20T00:00:00.000Z"
+}
